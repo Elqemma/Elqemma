@@ -65,6 +65,9 @@ jobs:
             fi
             echo "configure-pages did not report a URL; using the derived default."
           fi
+          # configure-pages reports the base URL without a trailing slash
+          # (https://owner.github.io/repo); set-site-url.mjs insists on one.
+          url="${url%/}/"
           echo "url=$url" >> "$GITHUB_OUTPUT"
           echo "Site URL: $url"
 
