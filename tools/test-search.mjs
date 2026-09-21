@@ -87,8 +87,13 @@ const published = [
   'assets/data/exams.json',
 ].map((f) => ({ f, body: fs.readFileSync(path.join(ROOT, f), 'utf8') }));
 
-const source = JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'source', 'forms.json'), 'utf8'));
-const code = String(source['كلمة_المرور'] ?? '').trim();
+/* forms.json holds the links in the clear, so it is gitignored and absent from
+   a fresh checkout (CI). The check runs wherever the file exists — i.e. on the
+   machine that builds and commits the published files. */
+const sourceFile = path.join(ROOT, 'data', 'source', 'forms.json');
+const source = fs.existsSync(sourceFile) ? JSON.parse(fs.readFileSync(sourceFile, 'utf8')) : null;
+if (!source) console.log('  (data/source/forms.json is not here: skipped the access-code check)');
+const code = String(source?.['كلمة_المرور'] ?? '').trim();
 if (code) {
   for (const { f, body } of published) {
     // A bare 4-digit code could occur by chance in a URL id, so only flag it
