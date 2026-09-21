@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>لوحة كلمة المرور — القمة في القسم اللفظي</title>
+
+    <!--
+      This page is not part of the site.
+
+      Nothing links to it, robots.txt disallows it, and it is noindex. None of
+      that is what protects it: the repository is public, so the file name is
+      public too. What protects it is that it holds nothing. Every secret on
+      this page arrives encrypted in assets/data/unlock.json and is decrypted in
+      the browser by a password that is never stored here and never sent
+      anywhere. Without that password this page is an empty form.
+    -->
+    <meta name="robots" content="noindex, nofollow, noarchive" />
+    <meta name="referrer" content="no-referrer" />
+    <meta name="theme-color" content="#fcfaf6" />
+    <meta name="color-scheme" content="light" />
+
+    <link rel="icon" href="favicon.ico" sizes="any" />
+
+    <link rel="stylesheet" href="assets/css/tokens.css" />
+    <link rel="stylesheet" href="assets/css/base.css" />
+    <link rel="stylesheet" href="assets/css/components.css" />
+
+    <script>
+      try {
+        var t = localStorage.getItem('qimma:theme');
+        if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+      } catch (e) {}
+    </script>
+
+    <style>
+      .admin {
+        max-width: 760px;
+        margin-inline: auto;
+        padding: var(--sp-8) var(--sp-4) var(--sp-16);
+        display: grid;
+        gap: var(--sp-6);
+      }
+
+      .admin__head h1 {
+        font-size: var(--fs-2xl);
+      }
+
+      .admin__head p {
+        margin-block-start: var(--sp-2);
+        color: var(--ink-3);
+        font-size: var(--fs-sm);
+        line-height: var(--lh-snug);
+      }
+
+      .panel {
+        padding: clamp(var(--sp-4), 2.4vw, var(--sp-6));
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--r-lg);
+        box-shadow: var(--shadow-2);
+        display: grid;
+        gap: var(--sp-4);
+      }
+
+      .panel[hidden] {
+        display: none;
+      }
+
+      .panel h2 {
+        font-size: var(--fs-lg);
+      }
+
+      .panel__note {
+        color: var(--ink-3);
+        font-size: var(--fs-sm);
+        line-height: var(--lh-snug);
+      }
+
+      .field {
+        display: grid;
+        gap: var(--sp-2);
+      }
+
+      .field .input {
+        width: 100%;
+      }
+
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--sp-2);
+        align-items: center;
+      }
+
+      .facts {
+        display: grid;
+        gap: var(--sp-2);
+        padding: var(--sp-3) var(--sp-4);
+        background: var(--surface-sunken);
+        border-radius: var(--r-md);
+        font-size: var(--fs-sm);
+      }
+
+      .facts div {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--sp-2);
+        justify-content: space-between;
+      }
+
+      .facts dt {
+        color: var(--ink-3);
+      }
+
+      .facts dd {
+        margin: 0;
+        color: var(--ink);
+        font-weight: 600;
+      }
+
+      .say {
+        padding: var(--sp-3) var(--sp-4);
+        border-radius: var(--r-md);
+        background: var(--surface-sunken);
+        color: var(--ink-2);
+        font-size: var(--fs-sm);
+        line-height: var(--lh-snug);
+        white-space: pre-line;
+      }
+
+      .say:empty {
+        display: none;
+      }
+
+      .say[data-state='wrong'] {
+        background: var(--danger-soft);
+        color: var(--danger-ink);
+      }
+
+      .say[data-state='ok'] {
+        background: var(--ok-soft);
+        color: var(--ok-ink);
+      }
+
+      .say[data-state='warn'] {
+        background: var(--accent-soft);
+        color: var(--gold-ink-soft);
+      }
+
+      .pw-out {
+        font-size: var(--fs-xl);
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        word-break: break-all;
+        unicode-bidi: plaintext;
+      }
+
+      .pending {
+        border-color: var(--accent-line);
+      }
+
+      details.advanced summary {
+        cursor: pointer;
+        color: var(--ink-2);
+        font-size: var(--fs-sm);
+        font-weight: 600;
+      }
+
+      details.advanced > div {
+        margin-block-start: var(--sp-4);
+        display: grid;
+        gap: var(--sp-4);
+      }
+    </style>
+  </head>
+
+  <body>
+    <main class="admin">
+      <header class="admin__head">
+        <h1>لوحة كلمة المرور</h1>
+        <p>
+          من هنا تُغيَّر كلمة المرور التي يفتح بها الطلاب النماذج. الصفحة لا تحفظ شيئًا ولا
+          ترسل شيئًا؛ كل ما يظهر فيها يُفكّ تشفيره داخل متصفحك بكلمة مرور المشرف.
+        </p>
+      </header>
+
+      <!-- 1. Sign in ------------------------------------------------------ -->
+      <section class="panel" id="signInPanel" aria-labelledby="signInTitle">
+        <h2 id="signInTitle">كلمة مرور المشرف</h2>
+        <form class="field" id="signInForm" autocomplete="off">
+          <label class="field__label" for="adminPw">اكتب كلمة مرور المشرف</label>
+          <input
+            class="input"
+            id="adminPw"
+            type="password"
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
+            enterkeyhint="go"
+          />
+          <div class="row">
+            <button type="submit" class="btn btn--primary" id="signInBtn">
+              <span>ادخل</span>
+            </button>
+          </div>
+        </form>
+        <p class="say" id="signInSay" role="status" aria-live="polite"></p>
+      </section>
+
+      <!-- 2. What is published right now ---------------------------------- -->
+      <section class="panel" id="statusPanel" aria-labelledby="statusTitle" hidden>
+        <h2 id="statusTitle">المنشور الآن</h2>
+        <dl class="facts" id="facts"></dl>
+
+        <div class="field">
+          <span class="field__label">كلمة المرور الحالية للطلاب</span>
+          <p class="pw-out" id="currentPw">••••</p>
+          <div class="row">
+            <button type="button" class="btn btn--secondary btn--sm" id="showPwBtn">
+              <span>أظهرها</span>
+            </button>
+            <button type="button" class="btn btn--secondary btn--sm" id="copyPwBtn">
+              <span>انسخها</span>
+            </button>
+            <a class="btn btn--whatsapp btn--sm" id="sharePwBtn" href="#" target="_blank" rel="noopener noreferrer">
+              <span>أرسلها على واتساب</span>
+            </a>
+          </div>
+        </div>
+        <p class="say" id="statusSay" role="status" aria-live="polite"></p>
+      </section>
+
+      <!-- 3. Change it ----------------------------------------------------- -->
+      <section class="panel" id="changePanel" aria-labelledby="changeTitle" hidden>
+        <h2 id="changeTitle">كلمة مرور جديدة للطلاب</h2>
+        <p class="panel__note">
+          بمجرّد نشر الملف الجديد، تتوقّف الكلمة القديمة عن العمل عند كل طالب تلقائيًا —
+          من غير ما يمسح أي حاجة من متصفحه.
+        </p>
+
+        <form class="field" id="changeForm" autocomplete="off">
+          <label class="field__label" for="newPw">الكلمة الجديدة</label>
+          <input
+            class="input"
+            id="newPw"
+            type="text"
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
+          />
+          <p class="say" id="strengthSay"></p>
+
+          <label class="field__label" for="newPw2">اكتبها مرة أخرى</label>
+          <input
+            class="input"
+            id="newPw2"
+            type="text"
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
+          />
+
+          <div class="row">
+            <button type="submit" class="btn btn--primary" id="changeBtn">
+              <span>جهّز الملف الجديد</span>
+            </button>
+            <button type="button" class="btn btn--secondary" id="suggestBtn">
+              <span>اقترح كلمة قوية</span>
+            </button>
+          </div>
+        </form>
+        <p class="say" id="changeSay" role="status" aria-live="polite"></p>
+      </section>
+
+      <!-- 4. Publish ------------------------------------------------------- -->
+      <section class="panel pending" id="publishPanel" aria-labelledby="publishTitle" hidden>
+        <h2 id="publishTitle">انشر على الموقع</h2>
+        <p class="panel__note">
+          الملف جاهز لكنه لم يصل للموقع بعد. اضغط الزر وسيُرفع تلقائيًا، ويتحدّث الموقع خلال
+          دقيقة أو دقيقتين — لا تحتاج أن تفتح أي ملف.
+        </p>
+
+        <div class="row">
+          <button type="button" class="btn btn--primary" id="ghBtn">
+            <span>انشر على الموقع الآن</span>
+          </button>
+        </div>
+
+        <p class="say" id="publishSay" role="status" aria-live="polite"></p>
+
+        <!-- Shown the first time only, until a token is saved. -->
+        <div class="field" id="ghSetup" hidden>
+          <p class="panel__note">
+            <strong>إعداد لمرة واحدة.</strong> الموقع يعيش على GitHub، وهذه الصفحة تحتاج إذنًا
+            لتكتب فيه نيابةً عنك. الإذن يُحفظ في متصفحك أنت فقط، ولا يُرسل إلا إلى GitHub.
+          </p>
+          <ol class="panel__note">
+            <li>
+              افتح
+              <a
+                href="https://github.com/settings/personal-access-tokens/new"
+                target="_blank"
+                rel="noopener noreferrer"
+                >صفحة إنشاء التوكن</a
+              >
+              (Fine-grained token).
+            </li>
+            <li>
+              <strong>Expiration:</strong> اختر أطول مدة متاحة.
+              <strong>Repository access:</strong> Only select repositories، واختر مستودع الموقع.
+            </li>
+            <li>
+              <strong>Permissions</strong> ← Repository permissions ← <strong>Contents</strong> ←
+              <strong>Read and write</strong>.
+            </li>
+            <li>اضغط Generate token، ثم الصقه هنا:</li>
+          </ol>
+          <label class="field__label" for="ghToken">التوكن</label>
+          <input class="input" id="ghToken" type="password" autocomplete="off" spellcheck="false" />
+          <div class="row">
+            <button type="button" class="btn btn--primary" id="ghSaveBtn">
+              <span>احفظ وانشر</span>
+            </button>
+          </div>
+        </div>
+
+        <details class="advanced">
+          <summary>إعدادات متقدمة وطريقة يدوية</summary>
+          <div>
+            <p class="panel__note">
+              المستودع يُكتشف تلقائيًا من عنوان الموقع، والفرع يُقرأ من GitHub. املأ هذه الحقول
+              فقط إذا كان الموقع على نطاق خاص أو أردت تجاوز الاكتشاف.
+            </p>
+            <div class="field">
+              <label class="field__label" for="ghOwner">المالك (owner)</label>
+              <input class="input" id="ghOwner" type="text" spellcheck="false" />
+            </div>
+            <div class="field">
+              <label class="field__label" for="ghRepo">المستودع (repository)</label>
+              <input class="input" id="ghRepo" type="text" spellcheck="false" />
+            </div>
+            <div class="field">
+              <label class="field__label" for="ghBranch">الفرع (branch) — اتركه فارغًا ليُقرأ من GitHub</label>
+              <input class="input" id="ghBranch" type="text" spellcheck="false" />
+            </div>
+            <div class="row">
+              <button type="button" class="btn btn--secondary btn--sm" id="ghSaveCfgBtn">
+                <span>احفظ الحقول</span>
+              </button>
+              <button type="button" class="btn btn--ghost btn--sm" id="ghForgetBtn">
+                <span>امسح التوكن</span>
+              </button>
+            </div>
+
+            <p class="panel__note">
+              <strong>بديل يدوي</strong> لو تعذّر النشر المباشر: نزّل الملف وارفعه مكان
+              <code>assets/data/unlock.json</code> في المستودع — اسحبه فوق مجلد
+              <code>assets/data</code> على GitHub ثم <strong>Commit changes</strong>.
+            </p>
+            <div class="row">
+              <button type="button" class="btn btn--secondary btn--sm" id="downloadBtn">
+                <span>نزّل unlock.json</span>
+              </button>
+            </div>
+          </div>
+        </details>
+      </section>
+
+      <!-- 5. Less often ---------------------------------------------------- -->
+      <section class="panel" id="morePanel" aria-labelledby="moreTitle" hidden>
+        <h2 id="moreTitle">أدوات أقل استعمالًا</h2>
+
+        <details class="advanced">
+          <summary>غيّر كلمة مرور المشرف</summary>
+          <div>
+            <p class="panel__note">
+              كلمة مرور المشرف لا يعرفها أحد غيرك، وهي التي تفتح هذه الصفحة. لو نسيتها فلا
+              توجد طريقة لاستعادتها — يُعاد بناء الملف من السطر الأول.
+            </p>
+            <form class="field" id="adminChangeForm" autocomplete="off">
+              <label class="field__label" for="newAdminPw">كلمة مرور المشرف الجديدة</label>
+              <input class="input" id="newAdminPw" type="text" autocomplete="off" spellcheck="false" />
+              <label class="field__label" for="newAdminPw2">اكتبها مرة أخرى</label>
+              <input class="input" id="newAdminPw2" type="text" autocomplete="off" spellcheck="false" />
+              <div class="row">
+                <button type="submit" class="btn btn--secondary">
+                  <span>جهّز الملف بكلمة مشرف جديدة</span>
+                </button>
+              </div>
+            </form>
+            <p class="say" id="adminChangeSay" role="status" aria-live="polite"></p>
+          </div>
+        </details>
+
+        <details class="advanced">
+          <summary>نسخة احتياطية من روابط النماذج</summary>
+          <div>
+            <p class="panel__note">
+              الروابط الصريحة لم تَعُد موجودة في المستودع إطلاقًا — نسختك الوحيدة منها هي
+              <code>data/source/forms.json</code> على جهازك. لو ضاعت، هذا الزر يستخرجها من
+              الملف المشفّر. احفظ الناتج في مكان آمن ولا ترفعه على GitHub.
+            </p>
+            <div class="row">
+              <button type="button" class="btn btn--ghost btn--sm" id="exportLinksBtn">
+                <span>نزّل الروابط (301 رابط)</span>
+              </button>
+            </div>
+            <p class="say" id="exportSay" role="status" aria-live="polite"></p>
+          </div>
+        </details>
+
+        <div class="row">
+          <button type="button" class="btn btn--ghost btn--sm" id="signOutBtn">
+            <span>اخرج من اللوحة</span>
+          </button>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="assets/js/lock-admin.js"></script>
+  </body>
+</html>

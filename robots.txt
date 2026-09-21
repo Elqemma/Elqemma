@@ -1,0 +1,100 @@
+# القمة في القسم اللفظي — الأستاذ عبد الرحمن سيد منصور
+# Everything here is free, public study material. Every well-behaved crawler is
+# welcome to read it, index it, and quote it.
+#
+# Two exceptions, and neither is a security measure — a disallow line is a
+# request, and the repository is public anyway. They are here so the teacher's
+# console never turns up in a search result, and so crawlers do not spend
+# themselves on a 35 KB block of ciphertext.
+User-agent: *
+Allow: /
+Disallow: /lock-admin.html
+Disallow: /assets/data/unlock.json
+
+# ---------------------------------------------------------------------------
+# Search engines
+# ---------------------------------------------------------------------------
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: DuckDuckBot
+Allow: /
+
+User-agent: YandexBot
+Allow: /
+
+User-agent: Applebot
+Allow: /
+
+# ---------------------------------------------------------------------------
+# AI assistants and their training/answering crawlers.
+#
+# These are named one by one rather than left to the wildcard above on purpose:
+# several of them treat an unnamed agent as "not addressed" and a site owner's
+# silence as a refusal. Students increasingly ask an assistant «فين ألاقي نماذج
+# قدرات لفظي؟» instead of a search engine, so being quotable there matters as
+# much as ranking. Google-Extended and Applebot-Extended control training only —
+# they do not affect Search ranking either way.
+# ---------------------------------------------------------------------------
+User-agent: GPTBot
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-User
+Allow: /
+
+User-agent: Claude-SearchBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Perplexity-User
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+User-agent: meta-externalagent
+Allow: /
+
+User-agent: Amazonbot
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+User-agent: cohere-ai
+Allow: /
+
+User-agent: Timpibot
+Allow: /
+
+User-agent: YouBot
+Allow: /
+
+User-agent: Diffbot
+Allow: /
+
+User-agent: ImagesiftBot
+Allow: /
+
+# A Sitemap directive must be an absolute URL, and the real origin is only known
+# at deploy time — tools/set-site-url.mjs rewrites this line during the build.

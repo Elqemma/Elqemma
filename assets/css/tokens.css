@@ -1,0 +1,254 @@
+/* ==========================================================================
+   Design tokens — القمة في القسم اللفظي
+   Palette sampled directly from the brand seal (data/source/brand/logo-seal.jpg):
+     royal navy  #0e214e → #0e275d   structure, text, depth
+     gold        #a17d4f → #dcbb85   THE action colour, and the accent
+     highlight   #ffecc2             the specular edge on the seal's metal
+
+   The seal carries only two colours, so gold does the work burgundy would do
+   in a three-colour brand: it is the primary action, and navy is everything
+   structural. Every text colour below was measured against its own background
+   and meets WCAG AA (4.5:1) in both themes — tools/test-tokens.mjs re-checks
+   the declared pairs on every `npm test`, so an edit that breaks one fails.
+   ========================================================================== */
+
+:root {
+  /* ---- Brand ramps ------------------------------------------------------ */
+  --navy-950: #071539;
+  --navy-900: #0b1c46;
+  --navy-800: #0e214e;
+  --navy-700: #13295e;
+  --navy-600: #1d3873;
+  --navy-500: #33508f;
+  --navy-400: #5a73ab;
+
+  --gold-900: #5c3f13;
+  --gold-800: #6d4c1c;
+  --gold-700: #7a5417;
+  --gold-600: #8a6224;
+  --gold-500: #b8904f;
+  --gold-400: #c9a86b;
+  --gold-300: #dcbb85;
+  --gold-200: #ecd3a8;
+  --gold-100: #f8eeda;
+
+  --paper-50: #ffffff;
+  --paper-100: #fcfaf6;
+  --paper-200: #f6f3ec;
+  --paper-300: #ece7db;
+  --paper-400: #ded7c7;
+
+  /* ---- Semantic (light, the default for every visitor) ------------------ */
+  --bg: var(--paper-200);
+  --bg-alt: var(--paper-100);
+  --surface: var(--paper-50);
+  --surface-2: var(--paper-100);
+  --surface-sunken: var(--paper-300);
+
+  --border: #e5dfd2;
+  --border-strong: #d3cab6;
+  /* The edge of a control that has no fill of its own — a text field, an
+     outlined icon button. WCAG 1.4.11 asks 3:1 for these; --border-strong is
+     decorative (card edges, separators) and deliberately much lighter. */
+  --control-border: #8b8371;
+
+  --ink: var(--navy-800); /* 14.1:1 on --bg */
+  --ink-2: #4a5573; /*  6.7:1 on --bg */
+  --ink-3: #5b6684; /*  5.2:1 on --bg — the muted floor, never lighter */
+  --ink-inverse: #ffffff;
+
+  /* Gold is the one action colour: a muted fill with navy ink on it. Each of
+     the three steps darkens visibly and still carries --accent-ink at AA —
+     tools/test-tokens.mjs re-checks all three, because a pressed button that
+     nobody can read is still a bug. */
+  --accent: var(--gold-400); /* navy ink on this = 7.3:1 */
+  --accent-hover: #c2a05c; /* navy ink on this = 6.3:1 */
+  --accent-active: var(--gold-500); /* navy ink on this = 5.6:1 */
+  --accent-ink: var(--navy-900);
+  --accent-soft: var(--gold-100);
+  --accent-line: rgba(184, 144, 79, 0.42);
+  /* Tinted call to action: gold-brown text on a gold wash, filling on hover.
+     «ابدأ الاختبار» repeats 301 times, so the resting state stays quiet. */
+  --accent-tint-ink: var(--gold-700); /* 6.1:1 on --accent-soft */
+
+  --gold-ink: var(--gold-700); /* gold-coloured TEXT, on paper */
+  --gold-ink-soft: var(--gold-800); /* gold text on --accent-soft */
+
+  /* The gate answers in one of two ways, and neither is gold. Kept muted so a
+     wrong password reads as a correction and not as an alarm. */
+  --danger-soft: #fbecea;
+  --danger-ink: #8f2318; /* 7.6:1 on --danger-soft */
+  --danger-line: rgba(143, 35, 24, 0.22);
+  --ok-soft: #e7f2ea;
+  --ok-ink: #14603c; /* 6.6:1 on --ok-soft */
+  --ok-line: rgba(20, 96, 60, 0.22);
+
+  --focus: var(--navy-600);
+  --focus-halo: rgba(29, 56, 115, 0.22);
+
+  --shadow-1: 0 1px 2px rgba(7, 21, 57, 0.06);
+  --shadow-2: 0 2px 10px -3px rgba(7, 21, 57, 0.12), 0 1px 2px rgba(7, 21, 57, 0.05);
+  --shadow-3: 0 16px 40px -16px rgba(7, 21, 57, 0.26);
+  --shadow-sheet: 0 -12px 40px -12px rgba(7, 21, 57, 0.3);
+  --shadow-accent: 0 10px 22px -12px rgba(138, 98, 36, 0.65);
+
+  --header-bg: rgba(252, 250, 246, 0.86);
+
+  /* The summit: a faint peak silhouette washed behind the hero. It is drawn
+     in CSS (conic gradients), never an image, so it costs nothing and adapts. */
+  --hero-wash: radial-gradient(72% 90% at 100% 0%, rgba(201, 168, 107, 0.2), transparent 62%),
+    radial-gradient(64% 80% at 0% 100%, rgba(29, 56, 115, 0.09), transparent 66%),
+    linear-gradient(180deg, #fdfbf7, var(--paper-200));
+  --peak: rgba(29, 56, 115, 0.07);
+  --dots: rgba(14, 33, 78, 0.07);
+
+  /* The one "strong" surface (the resume tile): deep navy in both themes. */
+  --strong-bg: linear-gradient(135deg, #1a3168, #0a1a42);
+  --strong-ink: #ffffff;
+  --strong-ink-2: rgba(255, 255, 255, 0.78);
+  --strong-icon-bg: rgba(220, 187, 133, 0.18);
+  --strong-icon: var(--gold-300);
+
+  /* The seal always sits on a white disc so its artwork reads identically in
+     both themes; only the rim, the ring and the shadow around it adapt. */
+  --seal-rim: linear-gradient(150deg, #ffffff 25%, #f3e7ce);
+  --seal-line: rgba(184, 144, 79, 0.34);
+  --seal-shadow: 0 30px 60px -30px rgba(7, 21, 57, 0.45),
+    0 10px 22px -14px rgba(138, 98, 36, 0.28);
+  --highlight: rgba(236, 211, 168, 0.4);
+
+  /* WhatsApp: the one non-brand colour, because students recognise the green
+     instantly. #0f7a45 keeps white text at 5.4:1. */
+  --wa: #0f7a45;
+  --wa-hover: #0b6b3d;
+  --wa-icon: #0f7a45;
+
+  /* Chat bubbles, for the students' messages: the received bubble is a plain
+     card, the teacher's reply is the pale WhatsApp green — body ink on both. */
+  --bubble-in: var(--surface);
+  --bubble-out: #e3f5dc;
+  --bubble-tick: #1d8fd1;
+
+  /* The navy stage behind the teacher's cut-out (identical in both themes). */
+  --stage: radial-gradient(120% 85% at 50% 16%, #27417b 0%, #0e214e 55%, #071539 100%);
+
+  /* ---- Typography ------------------------------------------------------- */
+  --font-sans: "IBM Plex Sans Arabic", "Segoe UI", "Noto Sans Arabic", system-ui, -apple-system,
+    "Helvetica Neue", Arial, sans-serif;
+
+  --fs-hero: clamp(2rem, 1.33rem + 2.75vw, 3.25rem); /* 32 → 52 */
+  --fs-display: clamp(1.75rem, 1.28rem + 2.05vw, 2.5rem); /* 28 → 40 */
+  --fs-2xl: clamp(1.3rem, 1.16rem + 0.6vw, 1.55rem); /* 21 → 25 */
+  --fs-xl: 1.1875rem; /* 19 */
+  --fs-lg: 1.0625rem; /* 17 */
+  --fs-md: 0.9375rem; /* 15 — the body floor */
+  --fs-sm: 0.875rem; /* 14 */
+  --fs-xs: 0.8125rem; /* 13 — the smallest size permitted anywhere */
+
+  --lh-tight: 1.25;
+  --lh-snug: 1.45;
+  --lh-normal: 1.75; /* Arabic needs more leading than Latin */
+
+  /* ---- Space (4px base) -------------------------------------------------- */
+  --sp-1: 0.25rem;
+  --sp-2: 0.5rem;
+  --sp-3: 0.75rem;
+  --sp-4: 1rem;
+  --sp-5: 1.25rem;
+  --sp-6: 1.5rem;
+  --sp-8: 2rem;
+  --sp-10: 2.5rem;
+  --sp-12: 3rem;
+  --sp-16: 4rem;
+
+  /* ---- Radii ------------------------------------------------------------- */
+  --r-sm: 8px;
+  --r-md: 10px;
+  --r-lg: 16px;
+  --r-xl: 24px;
+  --r-full: 999px;
+
+  /* ---- Layout ------------------------------------------------------------ */
+  --container: 1200px;
+  --gutter: clamp(1rem, 0.55rem + 2.2vw, 2rem);
+  --header-h: 68px;
+
+  /* ---- Motion ------------------------------------------------------------ */
+  --ease: cubic-bezier(0.2, 0.7, 0.3, 1);
+  --dur-fast: 120ms;
+  --dur: 180ms;
+  --dur-slow: 260ms;
+
+  color-scheme: light;
+}
+
+/* ---- Dark theme ---------------------------------------------------------- */
+/* Light is the default for everyone, whatever the operating system is set to.
+   Dark is opt-in only, through the header toggle, which stamps
+   data-theme="dark" on <html>; the choice is remembered. */
+
+:root[data-theme="dark"] {
+  --bg: var(--navy-950);
+  --bg-alt: #0a1a41;
+  --surface: #0f2150;
+  --surface-2: #14285c;
+  --surface-sunken: #0a1a41;
+
+  --border: #22356b;
+  --border-strong: #31487f;
+  --control-border: #7086b4;
+
+  --ink: #eaf0fb; /* 15.6:1 on --bg */
+  --ink-2: #aebdd8; /*  9.4:1 */
+  --ink-3: #8fa0c0; /*  6.8:1 — the muted floor */
+  --ink-inverse: var(--navy-950);
+
+  --accent: var(--gold-300);
+  --accent-hover: var(--gold-200);
+  --accent-active: var(--gold-400);
+  --accent-ink: var(--navy-950); /* 9.8:1 on --accent */
+  --accent-soft: rgba(220, 187, 133, 0.15);
+  --accent-line: rgba(220, 187, 133, 0.42);
+  --accent-tint-ink: var(--gold-200); /* 11.4:1 on --bg */
+
+  --gold-ink: #e2c48d; /* 10.7:1 on --bg */
+  --gold-ink-soft: var(--gold-200);
+
+  /* Washes here, not solids: they sit on --surface and must stay dark enough
+     for the pale ink on top of them. */
+  --danger-soft: rgba(228, 120, 110, 0.16);
+  --danger-ink: #ffb4ab; /* 7.4:1 on --danger-soft over --surface */
+  --danger-line: rgba(228, 120, 110, 0.4);
+  --ok-soft: rgba(110, 214, 160, 0.15);
+  --ok-ink: #93e0b7; /* 7.3:1 on --ok-soft over --surface */
+  --ok-line: rgba(110, 214, 160, 0.38);
+
+  --focus: var(--gold-200);
+  --focus-halo: rgba(236, 211, 168, 0.26);
+
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.45);
+  --shadow-2: 0 2px 10px -3px rgba(0, 0, 0, 0.55), 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-3: 0 16px 40px -16px rgba(0, 0, 0, 0.72);
+  --shadow-sheet: 0 -12px 40px -12px rgba(0, 0, 0, 0.7);
+  --shadow-accent: 0 10px 22px -12px rgba(0, 0, 0, 0.75);
+
+  --header-bg: rgba(7, 21, 57, 0.86);
+  --hero-wash: radial-gradient(72% 90% at 100% 0%, rgba(220, 187, 133, 0.14), transparent 62%),
+    radial-gradient(64% 80% at 0% 100%, rgba(51, 80, 143, 0.22), transparent 66%),
+    linear-gradient(180deg, #0a1c47, var(--navy-950));
+  --peak: rgba(220, 187, 133, 0.06);
+  --dots: rgba(234, 240, 251, 0.06);
+
+  --strong-bg: linear-gradient(135deg, #1e3872, #0d1f4d);
+
+  --seal-rim: linear-gradient(150deg, #2b407a, #14285c);
+  --seal-line: rgba(220, 187, 133, 0.36);
+  --seal-shadow: 0 30px 60px -30px rgba(0, 0, 0, 0.88), 0 0 0 1px rgba(220, 187, 133, 0.14);
+  --highlight: rgba(220, 187, 133, 0.26);
+  --wa-icon: #25d366;
+  --bubble-in: #14285c;
+  --bubble-out: #143d31;
+  --bubble-tick: #6fc8f5;
+
+  color-scheme: dark;
+}

@@ -1,0 +1,22 @@
+{
+  "name": "qimma-verbal-portal",
+  "version": "1.0.0",
+  "private": true,
+  "description": "القمة في القسم اللفظي — بوابة نماذج القدرات اللفظي للأستاذ عبد الرحمن سيد منصور (موقع ثابت بالكامل، بدون خادم)",
+  "type": "module",
+  "scripts": {
+    "build": "node tools/build-data.mjs",
+    "build:data": "node tools/build-data.mjs",
+    "build:lock": "node tools/build-lock.mjs",
+    "test": "node tools/test-search.mjs && node tools/test-store.mjs && node tools/test-lock.mjs && node tools/test-seo.mjs && node tools/test-tokens.mjs",
+    "verify": "node tools/build-data.mjs && node tools/test-search.mjs && node tools/test-store.mjs && node tools/test-lock.mjs && node tools/test-seo.mjs && node tools/test-tokens.mjs && node tools/build-lock.mjs --verify && node tools/check-links.mjs --offline",
+    "verify:ci": "node tools/test-search.mjs && node tools/test-store.mjs && node tools/test-lock.mjs && node tools/test-seo.mjs && node tools/test-tokens.mjs && node tools/build-lock.mjs --verify && node tools/check-links.mjs --offline",
+    "check:links": "node tools/check-links.mjs",
+    "set-url": "node tools/set-site-url.mjs",
+    "start": "node tools/serve.mjs",
+    "dev": "node tools/serve.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

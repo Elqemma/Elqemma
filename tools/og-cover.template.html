@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <title>og-cover</title>
+    <!--
+      Source for assets/img/og-cover.jpg — the 1200x630 card that WhatsApp,
+      Twitter/X, Telegram and Facebook show when the link is shared.
+
+      To regenerate: serve the site (npm start), open
+        http://127.0.0.1:4173/tools/og-cover.template.html
+      at exactly 1200x630 with no device-pixel-ratio scaling, screenshot the
+      viewport, and save it as assets/img/og-cover.jpg at quality ~88.
+
+      It re-uses the site's own fonts and tokens rather than restating the
+      palette, so the card can never drift from the brand it advertises.
+      Everything is sized in px, not rem or vw: this page is one fixed canvas.
+    -->
+    <link rel="stylesheet" href="../assets/css/tokens.css" />
+    <link rel="stylesheet" href="../assets/css/base.css" />
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        width: 1200px;
+        height: 630px;
+        overflow: hidden;
+      }
+
+      .card {
+        position: relative;
+        display: grid;
+        grid-template-columns: 1fr 360px;
+        align-items: center;
+        gap: 48px;
+        width: 1200px;
+        height: 630px;
+        padding: 64px 72px;
+        background: radial-gradient(110% 120% at 100% 0%, #1d3873 0%, #0e214e 46%, #071539 100%);
+        color: #fff;
+        box-sizing: border-box;
+        font-family: var(--font-sans);
+      }
+
+      /* The summit, same silhouette the hero uses. */
+      .peak {
+        position: absolute;
+        inset-block-end: 0;
+        inset-inline: -5%;
+        height: 300px;
+        background: rgba(220, 187, 133, 0.09);
+        clip-path: polygon(0% 100%, 26% 34%, 38% 62%, 57% 4%, 74% 48%, 86% 28%, 100% 100%);
+      }
+
+      .copy {
+        position: relative;
+        z-index: 1;
+        min-width: 0;
+      }
+
+      .eyebrow {
+        display: inline-block;
+        padding: 8px 18px;
+        border: 1px solid rgba(220, 187, 133, 0.5);
+        border-radius: 999px;
+        color: #dcbb85;
+        font-size: 22px;
+        font-weight: 600;
+      }
+
+      h1 {
+        margin: 24px 0 0;
+        font-size: 53px;
+        line-height: 1.2;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+      }
+
+      h1 em {
+        font-style: normal;
+        color: #dcbb85;
+      }
+
+      .role {
+        margin: 20px 0 0;
+        color: rgba(255, 255, 255, 0.82);
+        font-size: 27px;
+        line-height: 1.5;
+      }
+
+      .stats {
+        display: flex;
+        gap: 40px;
+        margin: 34px 0 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .stats b {
+        display: block;
+        color: #dcbb85;
+        font-size: 44px;
+        line-height: 1.1;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .stats span {
+        color: rgba(255, 255, 255, 0.72);
+        font-size: 22px;
+      }
+
+      .brand {
+        position: relative;
+        z-index: 1;
+        display: grid;
+        justify-items: center;
+        gap: 22px;
+      }
+
+      .portrait {
+        width: 300px;
+        height: 300px;
+        border-radius: 50%;
+        border: 4px solid rgba(220, 187, 133, 0.55);
+        box-shadow: 0 30px 60px -28px rgba(0, 0, 0, 0.7);
+      }
+
+      .seal {
+        width: 132px;
+        height: 132px;
+        border-radius: 50%;
+        background: #fff;
+        padding: 6px;
+        box-shadow: 0 16px 30px -18px rgba(0, 0, 0, 0.8);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <span class="peak"></span>
+
+      <div class="copy">
+        <span class="eyebrow">القمة في القسم اللفظي · قدراتك تحت السيطرة</span>
+        <h1>القسم اللفظي مع<br /><em>الأستاذ عبد الرحمن منصور</em></h1>
+        <p class="role">مدرب القدرات · ماجستير اللغة العربية</p>
+        <ul class="stats">
+          <li><b>301</b><span>نموذج مجاني</span></li>
+          <li><b>3,657</b><span>سؤالًا</span></li>
+          <li><b>0507008364</b><span>واتساب</span></li>
+        </ul>
+      </div>
+
+      <div class="brand">
+        <img class="portrait" src="../assets/img/teacher-portrait-720.webp" alt="" />
+        <img class="seal" src="../assets/img/mark-300.webp" alt="" />
+      </div>
+    </div>
+  </body>
+</html>

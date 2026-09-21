@@ -1,0 +1,23 @@
+node_modules/
+.DS_Store
+Thumbs.db
+*.log
+
+# ---------------------------------------------------------------------------
+# The form links, in the clear.
+#
+# The site's 301 Google Forms links exist in exactly two places now: encrypted
+# in assets/data/unlock.json, which is committed and published, and in plain
+# text in the two files below, which are neither. This repository is public and
+# GitHub Pages serves it whole, so a plain link committed here would be a plain
+# link on the internet — and the password on the front of the site would be
+# protecting a door with no wall around it.
+#
+#   forms.json            the teacher's export, the source of everything
+#   links.generated.json  what build-data.mjs hands to build-lock.mjs
+#
+# Keep a backup of forms.json somewhere off this machine. If it is ever lost,
+# lock-admin.html can export the links back out of the encrypted file.
+# ---------------------------------------------------------------------------
+data/source/forms.json
+data/source/links.generated.json

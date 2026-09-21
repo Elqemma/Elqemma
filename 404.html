@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>الصفحة غير موجودة — القمة في القسم اللفظي</title>
+    <meta name="robots" content="noindex" />
+    <meta name="color-scheme" content="light" />
+    <meta name="theme-color" content="#fcfaf6" />
+
+    <!--
+      GitHub Pages serves this file for ANY unknown path, at any depth, so a
+      relative URL written here would point somewhere different on every 404.
+      The page is therefore fully self-contained: no stylesheet, script, font or
+      image request at all, and the palette is inlined instead of read from
+      tokens.css. The only things that genuinely need the site root — the two
+      links — are resolved at runtime by the script at the bottom.
+    -->
+    <style>
+      :root {
+        --bg: #f6f3ec;
+        --surface: #ffffff;
+        --ink: #0e214e;
+        --ink-2: #4a5573;
+        --gold-ink: #7a5417;
+        --accent: #c9a86b;
+        --accent-hover: #b8904f;
+        --accent-ink: #0b1c46;
+        --border: #e5dfd2;
+        --border-strong: #d3cab6;
+        --focus: #1d3873;
+        --shadow: 0 16px 40px -20px rgba(7, 21, 57, 0.28);
+        /* The "summit" wash: the same two-gradient recipe as the site hero,
+           written as plain rgba() so it rasterises without color-mix(). */
+        --wash-gold: rgba(201, 168, 107, 0.22);
+        --wash-navy: rgba(29, 56, 115, 0.1);
+        --peak: rgba(29, 56, 115, 0.07);
+        color-scheme: light;
+      }
+
+      /* Light is the default for everyone, whatever the operating system is set
+         to — the same rule the rest of the site follows. Dark is reached only
+         through the header toggle, and the script in <head> copies that choice
+         out of storage before the first paint. */
+      :root[data-theme="dark"] {
+        --bg: #071539;
+        --surface: #0f2150;
+        --ink: #eaf0fb;
+        --ink-2: #aebdd8;
+        --gold-ink: #e2c48d;
+        --accent: #dcbb85;
+        --accent-hover: #ecd3a8;
+        --accent-ink: #071539;
+        --border: #22356b;
+        --border-strong: #31487f;
+        --focus: #ecd3a8;
+        --shadow: 0 16px 40px -20px rgba(0, 0, 0, 0.75);
+        --wash-gold: rgba(220, 187, 133, 0.14);
+        --wash-navy: rgba(51, 80, 143, 0.24);
+        --peak: rgba(220, 187, 133, 0.07);
+        color-scheme: dark;
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+      }
+
+      body {
+        min-height: 100dvh;
+        display: grid;
+        place-items: center;
+        padding: 2.5rem 1rem;
+        background-color: var(--bg);
+        background-image: radial-gradient(72% 90% at 100% 0%, var(--wash-gold), transparent 62%),
+          radial-gradient(64% 80% at 0% 100%, var(--wash-navy), transparent 66%);
+        background-repeat: no-repeat;
+        color: var(--ink);
+        font-family: "IBM Plex Sans Arabic", "Segoe UI", "Noto Sans Arabic", system-ui,
+          -apple-system, "Helvetica Neue", Arial, sans-serif;
+        font-size: 0.9375rem; /* 15px — the body floor used across the site */
+        line-height: 1.75;
+        text-align: center;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      .wrap {
+        position: relative;
+        width: 100%;
+        max-width: 34rem;
+        padding: clamp(1.75rem, 1rem + 3vw, 2.75rem) clamp(1.25rem, 0.75rem + 2vw, 2.5rem);
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 24px;
+        box-shadow: var(--shadow);
+        overflow: hidden;
+      }
+
+      /* The summit silhouette, clipped out of a single box: the card carries the
+         brand's motif without loading the seal image. */
+      .wrap::before {
+        content: "";
+        position: absolute;
+        inset-block-start: 0;
+        inset-inline-start: 50%;
+        width: 22rem;
+        height: 11rem;
+        translate: 50% 0;
+        /* Faded rather than flat so the clipped baseline does not draw a hard
+           horizontal rule across the headline. */
+        background: linear-gradient(180deg, var(--peak), transparent 88%);
+        clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
+        pointer-events: none;
+      }
+
+      .wrap > * {
+        position: relative;
+      }
+
+      .mark {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.375rem 0.875rem;
+        margin-block-end: 1.75rem;
+        border: 1px solid var(--border-strong);
+        border-radius: 999px;
+        font-size: 0.8125rem; /* 13px — the metadata floor */
+        font-weight: 600;
+        line-height: 1.45;
+        color: var(--ink-2);
+      }
+
+      .mark::before {
+        content: "";
+        flex: none;
+        width: 8px;
+        height: 8px;
+        rotate: 45deg;
+        background: var(--accent);
+        border-radius: 2px;
+      }
+
+      .code {
+        font-size: clamp(3.25rem, 1.75rem + 7vw, 5.5rem);
+        font-weight: 700;
+        line-height: 1;
+        letter-spacing: -0.045em;
+        color: var(--gold-ink);
+        font-variant-numeric: tabular-nums;
+      }
+
+      h1 {
+        margin-block: 0.875rem 0.625rem;
+        font-size: clamp(1.3rem, 1.16rem + 0.6vw, 1.55rem);
+        line-height: 1.25;
+        font-weight: 700;
+      }
+
+      .lead {
+        margin-inline: auto;
+        margin-block-end: 1.75rem;
+        max-width: 28rem;
+        color: var(--ink-2);
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.625rem;
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 46px;
+        padding: 0 1.25rem;
+        border: 1px solid transparent;
+        border-radius: 12px;
+        font: inherit;
+        font-weight: 600;
+        text-decoration: none;
+        transition: background-color 180ms cubic-bezier(0.2, 0.7, 0.3, 1),
+          border-color 180ms cubic-bezier(0.2, 0.7, 0.3, 1);
+      }
+
+      .btn.primary {
+        background: var(--accent);
+        color: var(--accent-ink);
+      }
+
+      .btn.primary:hover {
+        background: var(--accent-hover);
+      }
+
+      .btn.secondary {
+        color: var(--ink);
+        border-color: var(--border-strong);
+      }
+
+      .btn.secondary:hover {
+        border-color: var(--ink-2);
+      }
+
+      .btn:focus-visible {
+        outline: 2px solid var(--focus);
+        outline-offset: 3px;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .btn {
+          transition: none;
+        }
+      }
+    </style>
+
+    <script>
+      /* Runs before the first paint so a visitor who already chose dark on the
+         site is not flashed a white card. Wrapped because localStorage throws
+         outright — not just returns null — when site data is blocked. */
+      (function () {
+        try {
+          var saved = localStorage.getItem('qimma:theme');
+          if (saved === 'dark' || saved === 'light') {
+            document.documentElement.setAttribute('data-theme', saved);
+          }
+        } catch (error) {
+          /* No stored preference reachable; the page stays on the default palette. */
+        }
+      })();
+    </script>
+  </head>
+
+  <body>
+    <main class="wrap">
+      <p class="mark">القمة في القسم اللفظي</p>
+
+      <p class="code" aria-hidden="true">404</p>
+      <h1>لم نجد هذه الصفحة</h1>
+      <p class="lead">
+        ربما تغيّر الرابط أو كُتب بشكل غير صحيح. عُد إلى الصفحة الرئيسية وابحث عن النموذج الذي
+        تريده بالاسم أو برقمه.
+      </p>
+
+      <div class="actions">
+        <a class="btn primary" id="homeLink" href="/">العودة إلى الرئيسية</a>
+        <a class="btn secondary" id="teacherLink" href="/teacher.html">صفحة الأستاذ</a>
+      </div>
+    </main>
+
+    <script>
+      /* Resolve the site root. On a GitHub Pages *project* site the first path
+         segment is the repository name; on a user/organisation site or a custom
+         domain the root is simply "/".
+
+         The exception is a user site, where the same shape — one github.io host
+         and one path segment — means a mistyped page, not a repository. Every
+         internal link on this site ends in ".html", so a lone segment carrying a
+         document extension is read as the bad filename it is; that keeps
+         "/teacher.html" from resolving to "/teacher.html/". A repository whose
+         name merely contains a dot is unaffected. */
+      (function () {
+        var base = '/';
+        var segments = location.pathname.split('/').filter(Boolean);
+        var looksLikeAFile =
+          segments.length === 1 && /\.(html?|php|xml|txt|json|js|css|png|jpe?g|webp|ico|pdf)$/i.test(segments[0]);
+
+        if (/\.github\.io$/i.test(location.hostname) && segments.length > 0 && !looksLikeAFile) {
+          base = '/' + segments[0] + '/';
+        }
+
+        document.getElementById('homeLink').setAttribute('href', base);
+        document.getElementById('teacherLink').setAttribute('href', base + 'teacher.html');
+      })();
+    </script>
+  </body>
+</html>

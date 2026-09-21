@@ -1,0 +1,25 @@
+{
+  "builtAt": "2026-09-21T00:19:24.781Z",
+  "source": "data/source/forms.json",
+  "published": 301,
+  "excluded": [],
+  "totalQuestions": 3657,
+  "questionsRange": [
+    5,
+    16
+  ],
+  "order": {
+    "source": "تجميعات اللفظي - الأقسام 1 إلى 301 - محلول.docx",
+    "renumbered": 262
+  },
+  "sectionMap": {
+    "mapped": 225,
+    "brandNew": 54,
+    "uncovered": 22
+  },
+  "priority": {
+    "label": "الأكثر تكرارًا",
+    "flagged": 134,
+    "unknown": []
+  }
+}
