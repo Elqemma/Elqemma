@@ -22,7 +22,7 @@ the pages end up agreeing with each other and staying inside what we actually kn
   about accounts, not price. `tools/test-seo.mjs` fails if the word comes back, in the copy,
   the metadata, the manifest or the share card.
 - **His rights close every page.** The footer's last line reserves them (section 5).
-- **The source of «الأكثر تكرارًا» is never named.** The teacher asked (2026-09-24): no page,
+- **The source of «زبدة الأقسام» is never named.** The teacher asked (2026-09-24): no page,
   no generated file and nothing else in this repository — it is published with the site —
   names the compilation the shortlist is matched against, or says whose it is. The copy
   says «يتكرّر ورودها أكثر من غيرها في التجميعات المتداولة» and «ليست ترتيبًا شخصيًا», and
@@ -30,7 +30,8 @@ the pages end up agreeing with each other and staying inside what we actually kn
 - **Neither secret is ever published.** The form's own code: copy says «رمز دخول تأخذه من
   الأستاذ» and stops there. The site password: «كلمة مرور تُؤخذ من الأستاذ», and stops there.
   Section 10 has the gate's words.
-- **«الأكثر تكرارًا» is hidden unless the teacher shows it** (asked 2026-09-24). He switches it
+- **«زبدة الأقسام» is hidden unless the teacher shows it** (asked 2026-09-24; the name
+  replaced «الأكثر تكرارًا» the same day, also at his request). He switches it
   from `lock-admin.html`; it ships off. With it off, no page, no FAQ, no JSON-LD and no
   `llms.txt` line may mention it — not even in hidden markup, because crawlers read the
   source. Every word the site says about it (label, blurb, the about page's section) lives in
@@ -139,7 +140,7 @@ which is also why each OG title repeats the brand.
   pager line, the progress bar, «134 قسمًا من 301» — or a range end («280–301»).
 
   NOTE: the third stat reads `meta.generated` (2026-09-18 → «18 سبتمبر 2026»). A fourth,
-  «134 الأكثر تكرارًا», is built by `app.js` in second place only while the teacher has the
+  «134 زبدة الأقسام», is built by `app.js` in second place only while the teacher has the
   shortlist switched on; the markup never carries it (see section 0).
 
 - **slogan strip / footer tagline** — `القمة — طريقك نحو الـ ١٠٠`
@@ -515,7 +516,7 @@ should: a student reading his file and a student reading this site now see the s
 number for the same passage, which is the whole point.
 
 It is the only number the site states. The teacher's previous numbering is not shown
-anywhere (4.4). **«الأكثر تكرارًا»**, when he shows it, flags the same 134 passages it
+anywhere (4.4). **«زبدة الأقسام»**, when he shows it, flags the same 134 passages it
 always did; the numbers it prints moved with them.
 
 **The form a link opens is still titled with its old number** (`القسم الثالث والأربعون

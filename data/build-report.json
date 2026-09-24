@@ -1,5 +1,5 @@
 {
-  "builtAt": "2026-09-24T00:29:42.346Z",
+  "builtAt": "2026-09-24T00:37:04.179Z",
   "source": "data/source/forms.json",
   "published": 301,
   "excluded": [],
@@ -13,7 +13,7 @@
     "renumbered": 262
   },
   "priority": {
-    "label": "الأكثر تكرارًا",
+    "label": "زبدة الأقسام",
     "flagged": 134,
     "unknown": []
   }

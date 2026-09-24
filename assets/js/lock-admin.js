@@ -23,7 +23,7 @@
  * up written on something.
  *
  * Its second job is the one switch students can see the effect of:
- * assets/data/features.json, which decides whether «الأكثر تكرارًا» exists on
+ * assets/data/features.json, which decides whether «زبدة الأقسام» exists on
  * the site at all (see assets/js/shortlist.js). It ships off; this page is how
  * it is turned on and back off, through the same GitHub commit.
  */
@@ -75,6 +75,7 @@ const el = {
   publishSay: $('publishSay'),
 
   featurePanel: $('featurePanel'),
+  featureTitle: $('featureTitle'),
   featureState: $('featureState'),
   featureCount: $('featureCount'),
   featureBtn: $('featureBtn'),
@@ -693,7 +694,7 @@ async function publish() {
 el.ghBtn.addEventListener('click', publish);
 
 /* -------------------------------------------------------------------------- */
-/* «الأكثر تكرارًا» — the switch                                               */
+/* «زبدة الأقسام» — the switch                                                 */
 /*                                                                             */
 /* Off by default. What this panel reports is what the live site serves, read */
 /* fresh, not what was last clicked here: another tab, or a hand edit on      */
@@ -717,19 +718,27 @@ async function fetchFeatures() {
   return { ...file, shortlist: file?.shortlist === true };
 }
 
-/** How many sections the published list holds; 0 when there is none to show. */
-async function fetchListSize() {
+/** The name the site shows until the published list says otherwise. */
+const LIST_NAME = 'زبدة الأقسام';
+
+/**
+ * The published list: how many sections it holds (0 when there is none to
+ * show) and the name students read, so this panel calls it what the site does.
+ */
+async function fetchList() {
   try {
     const response = await fetchLive(SHORTLIST_PATH);
-    if (!response.ok) return 0;
+    if (!response.ok) return { size: 0, name: LIST_NAME };
     const list = await response.json();
-    return Array.isArray(list?.sections) ? list.sections.length : 0;
+    const name = typeof list?.label === 'string' && list.label.trim() ? list.label.trim() : LIST_NAME;
+    return { size: Array.isArray(list?.sections) ? list.sections.length : 0, name };
   } catch {
-    return 0;
+    return { size: 0, name: LIST_NAME };
   }
 }
 
 let listSize = 0;
+let listName = LIST_NAME;
 
 function renderFeatures() {
   const on = features?.shortlist === true;
@@ -745,14 +754,17 @@ async function loadFeatures() {
   el.featureBtn.disabled = true;
   say(el.featureSay, 'note', 'جارٍ قراءة الحالة من الموقع…');
   try {
-    [features, listSize] = await Promise.all([fetchFeatures(), fetchListSize()]);
+    const [live, list] = await Promise.all([fetchFeatures(), fetchList()]);
+    features = live;
+    ({ size: listSize, name: listName } = list);
+    el.featureTitle.textContent = listName;
     renderFeatures();
     say(
       el.featureSay,
       listSize || features.shortlist ? null : 'warn',
       listSize || features.shortlist
         ? ''
-        : 'لا توجد قائمة «الأكثر تكرارًا» منشورة على الموقع، فلا شيء يمكن إظهاره الآن.',
+        : `لا توجد قائمة «${listName}» منشورة على الموقع، فلا شيء يمكن إظهاره الآن.`,
     );
   } catch (error) {
     say(el.featureSay, 'wrong', error.message);
@@ -772,8 +784,8 @@ async function toggleShortlist() {
 
   const sure = window.confirm(
     next
-      ? 'ستظهر «الأكثر تكرارًا» لكل الطلاب خلال دقيقة أو دقيقتين: الشارة والفلتر وزرّها وشرحها. متابعة؟'
-      : 'ستختفي «الأكثر تكرارًا» وكل ما يخصّها عن كل الطلاب خلال دقيقة أو دقيقتين. متابعة؟',
+      ? `ستظهر «${listName}» لكل الطلاب خلال دقيقة أو دقيقتين: الشارة والفلتر وزرّها وشرحها. متابعة؟`
+      : `ستختفي «${listName}» وكل ما يخصّها عن كل الطلاب خلال دقيقة أو دقيقتين. متابعة؟`,
   );
   if (!sure) return;
 
@@ -784,7 +796,7 @@ async function toggleShortlist() {
     await ghCommit(cfg, {
       path: FEATURES_PATH,
       text: `${JSON.stringify(file, null, 2)}\n`,
-      message: next ? 'إظهار «الأكثر تكرارًا» للطلاب' : 'إخفاء «الأكثر تكرارًا» عن الطلاب',
+      message: next ? `إظهار «${listName}» للطلاب` : `إخفاء «${listName}» عن الطلاب`,
     });
     features = file;
 

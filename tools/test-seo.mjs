@@ -310,7 +310,7 @@ for (const page of PAGES) {
 }
 check('llms.txt reserves his rights', /جميع الحقوق محفوظة/.test(read('llms.txt')));
 
-// The compilation «الأكثر تكرارًا» is matched against is never named, anywhere:
+// The compilation «زبدة الأقسام» is matched against is never named, anywhere:
 // the deploy publishes this whole folder, so a README line or a code comment is
 // as public as the page. The teacher asked (2026-09-24). The pattern avoids
 // «شجرة الزيتون», which is a real section's title. This file is skipped because
@@ -329,13 +329,20 @@ const tracked = [];
   }
 })('');
 const naming = tracked.filter((file) => SOURCE_NAME.test(read(file)));
-check('no file names the source of «الأكثر تكرارًا»', naming.length === 0, naming.join(', '));
+check('no file names the source of «زبدة الأقسام»', naming.length === 0, naming.join(', '));
 
-// «الأكثر تكرارًا» itself is hidden unless the teacher switches it on from the
+// «زبدة الأقسام» itself is hidden unless the teacher switches it on from the
 // console, and hidden includes what a crawler reads in the source: no page and
 // no llms.txt carries a word of it, shown or not. Its copy lives in
 // assets/data/shortlist.json and reaches a page only while features.json says so.
-const SHORTLIST_WORDS = /الأكثر\s+تكرار|تكرّر\s+ورودها|الشارة\s+الذهبية/;
+// «الأكثر تكرارًا» is its former name, and stays out too.
+const SHORTLIST_WORDS = /زبد[ةه]\s+الأقسام|الأكثر\s+تكرار|تكرّر\s+ورودها|الشارة\s+الذهبية/;
+if (fs.existsSync(path.join(ROOT, 'assets/data/shortlist.json'))) {
+  // A rename in priority.json has to reach this guard, or the new name could
+  // land in a page unnoticed.
+  check('the hidden-shortlist guard knows the name the site publishes',
+    SHORTLIST_WORDS.test(JSON.parse(read('assets/data/shortlist.json')).label));
+}
 for (const file of [...ALL_HTML, 'llms.txt']) {
   const hit = SHORTLIST_WORDS.exec(read(file));
   check(`${file}: carries no word of the hidden shortlist`, !hit, hit ? `found: "${hit[0]}"` : '');

@@ -1,5 +1,5 @@
 /**
- * shortlist.js — «الأكثر تكرارًا», hidden unless the teacher shows it.
+ * shortlist.js — «زبدة الأقسام», hidden unless the teacher shows it.
  *
  * Two published files decide it, and nothing else the site ships mentions it:
  *

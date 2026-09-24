@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-derive-priority.py — «الأكثر تكرارًا», derived rather than asserted.
+derive-priority.py — «زبدة الأقسام», derived rather than asserted.
 
     python tools/derive-priority.py            # report only
     python tools/derive-priority.py --write    # also update data/source/priority.json
@@ -9,7 +9,7 @@ Needs nothing but the standard library.
 
 WHY THIS EXISTS
 ---------------
-«الأقسام الأكثر تكرارًا» is a real, checkable claim, and a site that makes it
+«زبدة الأقسام» — the sections that recur most — is a real, checkable claim, and a site that makes it
 should be able to show its work. The claim does not come from either teacher's
 opinion: it comes from a separate reference compilation that collects the
 passages recurring most in the real exam.
@@ -200,7 +200,7 @@ def main():
             "الأقسام المطابقة. "
             "لتعديلها يدويًا: اكتب الأرقام في sections مباشرة، والسكربت لن يعترض — لكن اذكر السبب هنا."
         ),
-        "label": "الأكثر تكرارًا",
+        "label": "زبدة الأقسام",
         "blurb": "أقسام يتكرّر ورودها أكثر من غيرها في التجميعات المتداولة — ابدأ بها إذا كان وقتك ضيقًا.",
         "method": {
             "matched_on": "نص الأسئلة، بنوافذ من ست كلمات، بعد استبعاد النص المتكرّر في أكثر من قسمين",

@@ -16,7 +16,7 @@
  *
  * Sources
  *   forms.json         the forms export (Arabic keys — see SCHEMA below)
- *   priority.json      «الأكثر تكرارًا» — the shortlist. Optional. It never
+ *   priority.json      «زبدة الأقسام» — the shortlist. Optional. It never
  *                      reaches exams.json, the pages or llms.txt: it is
  *                      written to assets/data/shortlist.json, which the site
  *                      reads only while assets/data/features.json — the
@@ -233,7 +233,7 @@ function loadPriority(published, order) {
   if (!matched.length) return { value: null, unknown };
   return {
     value: {
-      label: String(raw.label || 'الأكثر تكرارًا').trim(),
+      label: String(raw.label || 'زبدة الأقسام').trim(),
       blurb: String(raw.blurb || '').trim(),
       updated: String(raw.updated || '').trim() || null,
       count: matched.length,
@@ -414,7 +414,7 @@ function build() {
 /* -------------------------------------------------------------------------- */
 
 /**
- * «الأكثر تكرارًا» and every word the site says about it, in one file the page
+ * «زبدة الأقسام» and every word the site says about it, in one file the page
  * fetches only while assets/data/features.json says so (assets/js/shortlist.js).
  * The about page's explanation lives here too, so a page with the switch off
  * holds no trace of it. No source list, no file: a switch left on then finds
@@ -451,7 +451,7 @@ function writeShortlist(priority, total) {
 function writeLlmsTxt(meta) {
   const total = meta.total;
   const q = meta.totalQuestions;
-  // No line for «الأكثر تكرارًا»: it is hidden unless the teacher shows it, and
+  // No line for «زبدة الأقسام»: it is hidden unless the teacher shows it, and
   // an assistant has no way to know which state the site is in.
 
   const text = `# الأستاذ عبد الرحمن سيد منصور — مدرب القدرات (القسم اللفظي)

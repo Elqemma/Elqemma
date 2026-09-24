@@ -148,7 +148,7 @@ function initLightbox() {
 }
 
 /**
- * The about page explains «الأكثر تكرارًا» only while the teacher has it
+ * The about page explains «زبدة الأقسام» only while the teacher has it
  * switched on. The page ships an empty marker; the module and its two small
  * files are fetched on that page alone, and with the switch off nothing is
  * added.

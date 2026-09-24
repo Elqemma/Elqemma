@@ -139,7 +139,7 @@ agrees('questionsMax', questionsMax);
 
 if (meta.sectionMap !== undefined) fail('exams.json carries meta.sectionMap; the old numbering is not published');
 
-/* «الأكثر تكرارًا» is hidden unless the teacher switches it on, so it lives
+/* «زبدة الأقسام» is hidden unless the teacher switches it on, so it lives
  * apart from the dataset: the switch in features.json, the list and its copy in
  * shortlist.json. Either state of the switch is valid here — the console
  * commits it, and this runs on that commit — but its shape is not negotiable,
