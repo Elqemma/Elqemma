@@ -104,35 +104,15 @@ if (code) {
 }
 
 /* -------------------------------------------------------------------------- */
-/* The section map                                                             */
+/* One numbering                                                               */
 /* -------------------------------------------------------------------------- */
 
-group('section map (old numbering -> new)');
+group('one numbering');
 
-const mapped = exams.filter((e) => Number.isInteger(e.o) && e.o > 0);
-check('at least one section carries an old number', mapped.length > 0);
-check(
-  'meta.sectionMap.mapped agrees with the records',
-  data.meta.sectionMap.mapped === mapped.length,
-);
-check(
-  'no old number is claimed by two sections',
-  new Set(mapped.map((e) => e.o)).size === mapped.length,
-  'a duplicate would make the converter answer with whichever section it hit first',
-);
-check(
-  'o is only ever a non-negative integer',
-  exams.every((e) => e.o === undefined || (Number.isInteger(e.o) && e.o >= 0)),
-);
-check(
-  'meta.sectionMap.brandNew counts the records marked 0',
-  data.meta.sectionMap.brandNew === exams.filter((e) => e.o === 0).length,
-);
-check(
-  'mapped + brandNew + uncovered === total',
-  data.meta.sectionMap.mapped + data.meta.sectionMap.brandNew + data.meta.sectionMap.uncovered ===
-    exams.length,
-);
+// The sections carry today's numbers and nothing else: no record may say what
+// it used to be called, because the page would have something to show.
+check('no record carries an old section number', exams.every((e) => e.o === undefined));
+check('meta carries no map to an old numbering', data.meta.sectionMap === undefined);
 
 /* -------------------------------------------------------------------------- */
 /* Normalisation parity with the build                                         */
@@ -205,32 +185,12 @@ firstIs('47', 47);
 firstIs('٤٧', 47, 'Arabic-Indic digits must fold to Latin');
 firstIs(' 47 ', 47, 'surrounding whitespace must not matter');
 
-// The old numbering is a first-class way in.
-const withOld = mapped.find((e) => e.o !== e.n && !exams.some((x) => x.n === e.o));
-if (withOld) {
-  const { results, via } = find(String(withOld.o));
-  check(
-    `"${withOld.o}" (an old number) finds section ${withOld.n}`,
-    results.some((r) => r.n === withOld.n),
-  );
-  check(
-    `the old-number hit is labelled via "o"`,
-    via instanceof Map && via.get(withOld.n) === 'o',
-  );
-}
-
-// A number that is BOTH a current number and some section's old number must
-// rank the current section first: that is what the student most likely meant.
-const both = mapped.find((e) => exams.some((x) => x.n === e.o) && e.o !== e.n);
-if (both) {
-  const { results, via } = find(String(both.o));
-  check(
-    `"${both.o}" ranks the CURRENT section ${both.o} above the old-numbering match`,
-    results[0]?.n === both.o,
-    `got ${results[0]?.n}`,
-  );
-  check(`the old-numbering match is still returned`, results.some((r) => r.n === both.n));
-  check(`and is labelled via "o"`, via?.get(both.n) === 'o');
+// A number means today's number, even for a record that still carries an old
+// one (a copy of exams.json cached before the old numbering was dropped).
+{
+  const stale = [{ n: 5, t: 'الزلازل والسكري', q: 10, o: 47 }];
+  check('a number never answers by an old number',
+    searchExams(stale, parseQuery('47')).results.length === 0);
 }
 
 // Arabic folding.

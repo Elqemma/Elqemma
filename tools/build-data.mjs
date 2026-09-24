@@ -3,8 +3,9 @@
  * build-data.mjs
  * ---------------------------------------------------------------------------
  * Reads the ORIGINAL, untouched exports in `data/source/` and produces the
- * validated runtime model at `assets/data/exams.json`, plus `llms.txt`,
- * `sitemap.xml` and `data/build-report.json`.
+ * validated runtime model at `assets/data/exams.json`, plus
+ * `assets/data/shortlist.json`, `llms.txt`, `sitemap.xml` and
+ * `data/build-report.json`.
  *
  *     npm run build:data
  *
@@ -15,12 +16,12 @@
  *
  * Sources
  *   forms.json         the forms export (Arabic keys — see SCHEMA below)
- *   section-map.json   القسم الجديد -> القسم القديم, extracted from the
- *                      teacher's comparison table (see tools/build-map.py)
- *   priority.json      «الأكثر تكرارًا» — his editorial shortlist. Optional:
- *                      an absent file, or an empty `sections`, hides every
- *                      affordance that depends on it rather than showing an
- *                      empty promise.
+ *   priority.json      «الأكثر تكرارًا» — the shortlist. Optional. It never
+ *                      reaches exams.json, the pages or llms.txt: it is
+ *                      written to assets/data/shortlist.json, which the site
+ *                      reads only while assets/data/features.json — the
+ *                      teacher's switch, flipped from lock-admin.html and
+ *                      never written here — says so.
  */
 
 import fs from 'node:fs';
@@ -30,10 +31,10 @@ import { fileURLToPath } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SOURCE_DIR = path.join(ROOT, 'data', 'source');
 const FORMS_FILE = path.join(SOURCE_DIR, 'forms.json');
-const MAP_FILE = path.join(SOURCE_DIR, 'section-map.json');
 const PRIORITY_FILE = path.join(SOURCE_DIR, 'priority.json');
 const ORDER_FILE = path.join(SOURCE_DIR, 'section-order.json');
 const OUT_FILE = path.join(ROOT, 'assets', 'data', 'exams.json');
+const SHORTLIST_FILE = path.join(ROOT, 'assets', 'data', 'shortlist.json');
 // The plain links, in the site's numbering, for tools/build-lock.mjs to seal.
 // Never committed and never published: see the .gitignore entry beside it.
 const LINKS_FILE = path.join(SOURCE_DIR, 'links.generated.json');
@@ -181,25 +182,13 @@ function loadSource() {
   return { head: Array.isArray(raw) ? {} : raw, forms };
 }
 
-function loadSectionMap() {
-  const raw = readJson(MAP_FILE, 'the section map');
-  if (!raw || !raw.map) return { map: new Map(), brandNew: new Set(), present: false };
-  const map = new Map();
-  for (const [newNo, oldNo] of Object.entries(raw.map)) {
-    const n = Number(newNo);
-    const o = Number(oldNo);
-    if (Number.isInteger(n) && Number.isInteger(o) && n > 0 && o > 0) map.set(n, o);
-  }
-  return { map, brandNew: new Set((raw.brand_new || []).map(Number)), present: true };
-}
-
 /**
  * The running order, from tools/build-order.py: which number and which name the
  * teacher's current compilation gives each section of the export.
  *
  * The export's «القسم» is the order the forms were built in, and it stays the
  * key everything else in data/source/ is written against — it is what holds a
- * link, an old number and a place on the shortlist. Only what the visitor reads
+ * link and a place on the shortlist. Only what the visitor reads
  * is translated. With no order file the export's own numbering stands, so the
  * site still builds on a machine that has never run the order tool.
  */
@@ -260,7 +249,6 @@ function loadPriority(published, order) {
 
 function build() {
   const { head, forms } = loadSource();
-  const { map: sectionMap, brandNew } = loadSectionMap();
   const order = loadOrder();
 
   const published = [];
@@ -316,11 +304,6 @@ function build() {
       g: stemKey(key),
     };
     links.push({ n: shown, u: url, s: short && short !== url ? short : null });
-    // o: the old section number. 0 means «جديد» — the teacher's table marks it
-    // as having no old counterpart. Absent means the table does not cover it.
-    if (sectionMap.has(n)) record.o = sectionMap.get(n);
-    else if (brandNew.has(n)) record.o = 0;
-
     published.push(record);
   }
 
@@ -328,10 +311,7 @@ function build() {
   links.sort((a, b) => a.n - b.n);
 
   const { value: priority, unknown: priorityUnknown } = loadPriority(published, order);
-  if (priority) {
-    const flagged = new Set(priority.sections);
-    for (const exam of published) if (flagged.has(exam.n)) exam.p = 1;
-  }
+  writeShortlist(priority, published.length);
 
   // Range chips. 50 per bucket keeps the chip row to six on a phone, and the
   // last bucket absorbs the remainder rather than showing a bucket of one.
@@ -350,8 +330,6 @@ function build() {
 
   const totalQuestions = published.reduce((sum, e) => sum + (e.q || 0), 0);
   const counts = published.map((e) => e.q).filter(Boolean);
-  const mapped = published.filter((e) => e.o > 0).length;
-  const flaggedNew = published.filter((e) => e.o === 0).length;
 
   const meta = {
     brand: String(head[K.project] ?? 'القمة في القسم اللفظي').trim(),
@@ -364,8 +342,6 @@ function build() {
     generated: String(head[K.released] ?? '').trim() || null,
     builtAt: new Date().toISOString().slice(0, 10),
     ranges,
-    sectionMap: { mapped, brandNew: flaggedNew, uncovered: published.length - mapped - flaggedNew },
-    priority,
   };
 
   // The site has to know it is looking at a locked dataset before it decides
@@ -401,7 +377,6 @@ function build() {
     totalQuestions,
     questionsRange: [meta.questionsMin, meta.questionsMax],
     order: order.present ? { source: order.source, renumbered: order.moved } : null,
-    sectionMap: meta.sectionMap,
     priority: priority
       ? { label: priority.label, flagged: priority.count, unknown: priorityUnknown }
       : { label: null, flagged: 0, unknown: priorityUnknown },
@@ -419,19 +394,54 @@ function build() {
   console.log(
     `            : ${totalQuestions} questions (${meta.questionsMin}–${meta.questionsMax} per form)`,
   );
-  console.log(
-    `section map : ${mapped} mapped to an old number, ${flaggedNew} marked جديد, ${meta.sectionMap.uncovered} not covered`,
-  );
   if (order.present)
     console.log(`order       : ${order.moved} sections renumbered to match «${order.source}»`);
   else console.log('order       : none (section-order.json missing) — the export numbering stands');
-  if (priority) console.log(`shortlist   : ${priority.count} flagged «${priority.label}»`);
-  else console.log('shortlist   : none (priority.json missing or empty) — affordances hidden');
+  if (priority) {
+    console.log(
+      `shortlist   : ${priority.count} sections -> assets/data/shortlist.json (shown only while features.json switches it on)`,
+    );
+  } else console.log('shortlist   : none (priority.json missing or empty) — shortlist.json removed');
   if (priorityUnknown.length)
     console.log(`            ! shortlist names sections that do not exist: ${priorityUnknown.join(', ')}`);
   for (const row of excluded) console.log(`            ! excluded ${row.at}: ${row.why}`);
 
   return meta;
+}
+
+/* -------------------------------------------------------------------------- */
+/* The shortlist — published on its own, read only when switched on            */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * «الأكثر تكرارًا» and every word the site says about it, in one file the page
+ * fetches only while assets/data/features.json says so (assets/js/shortlist.js).
+ * The about page's explanation lives here too, so a page with the switch off
+ * holds no trace of it. No source list, no file: a switch left on then finds
+ * nothing, and the feature stays off.
+ */
+function writeShortlist(priority, total) {
+  if (!priority) {
+    fs.rmSync(SHORTLIST_FILE, { force: true });
+    return;
+  }
+  const { label, blurb, updated, count, sections } = priority;
+  const shortlist = {
+    label,
+    blurb,
+    updated,
+    count,
+    sections,
+    about: {
+      heading: `«${label}» — ما هذه الشارة الذهبية؟`,
+      paragraphs: [
+        `بعض الأقسام عليها شارة «${label}»، ولها فلتر خاص وزرّ في الوصول السريع وشريط تقدّم مستقل. معناها أن نصوص هذا القسم يتكرّر ورودها أكثر من غيرها في التجميعات المتداولة بين الطلاب.`,
+        `هذه القائمة ليست رأيًا شخصيًا، وعددها اليوم ${arabicNumber(count)} ${unitNoun(count, 'section')} من ${arabicNumber(total)}.`,
+      ],
+      note: 'الشارة ترتيب أولويات لا ضمانة: إن كان وقتك ضيقًا ابدأ بها، وإن كان أمامك متّسع فالأقسام كلها مفيدة. لا أحد يعرف أسئلة الاختبار القادم.',
+    },
+  };
+  fs.writeFileSync(SHORTLIST_FILE, JSON.stringify(shortlist) + EOL, 'utf8');
 }
 
 /* -------------------------------------------------------------------------- */
@@ -441,22 +451,14 @@ function build() {
 function writeLlmsTxt(meta) {
   const total = meta.total;
   const q = meta.totalQuestions;
-  const key = meta.priority;
-  // Careful with this sentence: the shortlist is matched from a separate
-  // compilation of recurring passages, not chosen by him, and an assistant
-  // quoting it must not turn that into an opinion he never gave.
-  const keyLine = key
-    ? `- «${key.label}»: ${arabicNumber(key.count)} ${unitNoun(key.count, 'section')} يتكرّر ورودها أكثر من غيرها في التجميعات المتداولة، ولها فلتر ورابط مباشر. القائمة مطابَقة آليًا على تجميعة «أقسام الزيتونة» وليست ترتيبًا شخصيًا.${EOL}`
-    : '';
-  const mapLine = meta.sectionMap.mapped
-    ? `- الترقيم تغيّر: البحث يقبل رقم القسم في الترقيم القديم كما يقبل الجديد (${arabicNumber(meta.sectionMap.mapped)} ${unitNoun(meta.sectionMap.mapped, 'section')} لها رقم قديم مقابل).${EOL}`
-    : '';
+  // No line for «الأكثر تكرارًا»: it is hidden unless the teacher shows it, and
+  // an assistant has no way to know which state the site is in.
 
   const text = `# الأستاذ عبد الرحمن سيد منصور — مدرب القدرات (القسم اللفظي)
 
 > الأستاذ عبد الرحمن سيد منصور، ماجستير اللغة العربية ومدرب القدرات في القسم اللفظي،
-> صاحب «${meta.brand}» على __SITE_URL__ — بوابة مجانية فيها ${arabicNumber(total)} ${unitNoun(total, 'exam')} إلكترونيًا
-> لتدريب طلاب وطالبات المملكة العربية السعودية على القسم اللفظي من اختبار القدرات العامة،
+> صاحب «${meta.brand}» على __SITE_URL__ — بوابة فيها ${arabicNumber(total)} ${unitNoun(total, 'exam')} إلكترونيًا
+> تُحدَّث أولًا بأول لتدريب طلاب وطالبات المملكة العربية السعودية على القسم اللفظي من اختبار القدرات العامة،
 > بمجموع ${arabicNumber(q)} ${unitNoun(q, 'question')}.
 
 ## من هو
@@ -470,15 +472,16 @@ function writeLlmsTxt(meta) {
 
 ## ما في الموقع
 
-- ${arabicNumber(total)} ${unitNoun(total, 'exam')} إلكترونيًا مجانيًا على Google Forms، مرقّمة من ١ إلى ${arabicNumber(total)}.
+- ${arabicNumber(total)} ${unitNoun(total, 'exam')} إلكترونيًا على Google Forms، مرقّمة من ١ إلى ${arabicNumber(total)}، تُحدَّث أولًا بأول.
 - ${arabicNumber(q)} ${unitNoun(q, 'question')} في المجموع، من ${arabicNumber(meta.questionsMin)} إلى ${arabicNumber(meta.questionsMax)} ${unitNoun(meta.questionsMax, 'question')} في النموذج الواحد.
 - كل نموذج اختبار مصحّح (Quiz): تظهر الدرجة بعد التسليم، ولا تُعرض الإجابات.
-${keyLine}${mapLine}- بحث عربي فوري بالاسم أو بالرقم، وتصفية، ومتابعة تقدّم محفوظة على جهاز الطالب وحده.
+- بحث عربي فوري بالاسم أو بالرقم، وتصفية، ومتابعة تقدّم محفوظة على جهاز الطالب وحده.
 - على صفحة الأستاذ: رسائل حقيقية من طلاب سابقين بعد ظهور نتائجهم (درجات كلية 99 و98 و96٪، و100 في القسم اللفظي)، مع اللقطات الأصلية وقد حُجبت الأسماء. نتيجة كل طالب تخصّه وحده ولا تُقاس عليها.
 
 ## ملاحظات مهمة
 
-- الموقع مجاني بالكامل ولا يطلب تسجيلًا.
+- الموقع لا يطلب تسجيلًا ولا حسابًا.
+- جميع الحقوق محفوظة للأستاذ عبد الرحمن سيد منصور: النماذج وأسئلتها وكل محتوى الموقع مملوكة له، ولا يحق لأي شخص أو جهة نسخها أو إعادة نشرها أو استخدامها دون إذن مسبق منه.
 - قائمة الأقسام وعناوينها وعدد أسئلتها مفتوحة للجميع، أمّا فتح النموذج فيحتاج كلمة مرور تُؤخذ من الأستاذ على واتساب ولا تُنشر هنا. تُكتب مرة واحدة على جهاز الطالب.
 - كل نموذج يطلب أيضًا في صفحته الأولى رمز دخول واسم الطالب ورقم جواله. الرمز يُؤخذ من الأستاذ مباشرة ولا يُنشر هنا.
 - «قياس» هو المركز الوطني للقياس، والأستاذ مدرّب لاختباراته وليس تابعًا له ولا معتمدًا منه.
@@ -567,17 +570,13 @@ function stampPages(meta) {
   const values = {
     'data-stat="total"': arabicNumber(meta.total),
     'data-unit="exam"': unitNoun(meta.total, 'exam'),
+    'data-unit="section"': unitNoun(meta.total, 'section'),
     'data-stat="questions"': arabicNumber(meta.totalQuestions),
     'data-unit="question"': unitNoun(meta.totalQuestions, 'question'),
     'data-stat="qmin"': arabicNumber(meta.questionsMin ?? 0),
     'data-stat="qmax"': arabicNumber(meta.questionsMax ?? 0),
-    'data-stat="mapped"': arabicNumber(meta.sectionMap.mapped),
     'data-stat="updated"': meta.generated ? formatDate(meta.generated) : '',
   };
-  if (meta.priority) {
-    values['data-stat="priority"'] = arabicNumber(meta.priority.count);
-    values['data-unit="priority"'] = meta.priority.label;
-  }
 
   for (const file of ['index.html', 'teacher.html', 'about.html']) {
     const full = path.join(ROOT, file);

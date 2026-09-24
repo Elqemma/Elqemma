@@ -17,12 +17,26 @@ the pages end up agreeing with each other and staying inside what we actually kn
   `assets/data/exams.json`. If a sentence you want is not here, we do not know it — do not
   write it. No superlatives, no guarantees, no pass rates, no student counts, no prices,
   no «معتمد من قياس», no social accounts, no address.
+- **Nothing is called free.** The teacher asked (2026-09-24) that no page say «مجاني»,
+  «مجانًا» or anything that means it («بلا مقابل», «بلا اشتراك»). «بلا تسجيل» is fine — it is
+  about accounts, not price. `tools/test-seo.mjs` fails if the word comes back, in the copy,
+  the metadata, the manifest or the share card.
+- **His rights close every page.** The footer's last line reserves them (section 5).
+- **The source of «الأكثر تكرارًا» is never named.** The teacher asked (2026-09-24): no page,
+  no generated file and nothing else in this repository — it is published with the site —
+  names the compilation the shortlist is matched against, or says whose it is. The copy
+  says «يتكرّر ورودها أكثر من غيرها في التجميعات المتداولة» and «ليست ترتيبًا شخصيًا», and
+  stops there. `tools/test-seo.mjs` fails if the name comes back.
 - **Neither secret is ever published.** The form's own code: copy says «رمز دخول تأخذه من
   الأستاذ» and stops there. The site password: «كلمة مرور تُؤخذ من الأستاذ», and stops there.
   Section 10 has the gate's words.
-- **The priority feature is off.** `meta.priority` is `null` and no exam carries `p`, so this
-  site has no «الأكثر تكرارًا» shortlist and nothing below refers to one. If the teacher sends
-  a list later, this file needs new copy — do not improvise it.
+- **«الأكثر تكرارًا» is hidden unless the teacher shows it** (asked 2026-09-24). He switches it
+  from `lock-admin.html`; it ships off. With it off, no page, no FAQ, no JSON-LD and no
+  `llms.txt` line may mention it — not even in hidden markup, because crawlers read the
+  source. Every word the site says about it (label, blurb, the about page's section) lives in
+  `tools/build-data.mjs` → `assets/data/shortlist.json`, and reaches a page only while the
+  switch is on. Write new copy for it there, never into a page. `tools/test-seo.mjs` fails if
+  a page or `llms.txt` carries a word of it.
 - **Digits** stay Western (`301`, `3657`, `225`) and get `class="tnum"`, so they keep lining
   figures inside RTL text. The slogan «القمة — طريقك نحو الـ ١٠٠» is the one exception: it is a
   brand string and keeps its Arabic-Indic ١٠٠.
@@ -63,17 +77,17 @@ which is also why each OG title repeats the brand.
 
 ### 1.1 index.html
 
-- **title** (45) — `القمة في القسم اللفظي — 301 نموذج قدرات مجاني`
-- **description** (153) — `301 نموذج مجاني للتدرّب على القسم اللفظي في اختبار القدرات العامة، بمجموع 3657 سؤالًا، يقدّمها الأستاذ عبد الرحمن سيد منصور. ابحث بالاسم أو بالرقم وابدأ.`
-- **og:title** (51) — `القمة في القسم اللفظي — نماذج القدرات اللفظي مجانًا`
-- **og:description** (118) — `301 نموذج مجاني في القسم اللفظي من اختبار القدرات، بمجموع 3657 سؤالًا، مع الأستاذ عبد الرحمن سيد منصور — مدرب القدرات.`
+- **title** (56) — `القسم اللفظي: 301 نموذج قدرات — الأستاذ عبد الرحمن منصور`
+- **description** (198) — `301 نموذج إلكتروني تُحدَّث أولًا بأول لتدريب القسم اللفظي في اختبار القدرات، إعداد الأستاذ عبد الرحمن سيد منصور — ماجستير اللغة العربية. ابحث بالاسم أو بالرقم، وافتح النموذج بكلمة المرور من الأستاذ.`
+- **og:title** (55) — `القسم اللفظي مع الأستاذ عبد الرحمن منصور — مدرب القدرات`
+- **og:description** (163) — `301 نموذج إلكتروني تُحدَّث أولًا بأول في القسم اللفظي، إعداد الأستاذ عبد الرحمن سيد منصور — ماجستير اللغة العربية ومدرب القدرات. للتواصل: واتساب ‎+966 50 700 8364.`
 - **og:site_name** — `القمة في القسم اللفظي`
 - **og:image:alt** — `القمة في القسم اللفظي — الأستاذ عبد الرحمن سيد منصور، مدرب القدرات`
 
 ### 1.2 teacher.html
 
 - **title** (50) — `عبد الرحمن سيد منصور — مدرب القدرات (القسم اللفظي)`
-- **description** (156) — `الأستاذ عبد الرحمن سيد منصور: مدرب القدرات في القسم اللفظي، وماجستير اللغة العربية، وخبرة خمسة عشر عامًا في القدرات والمناهج السعودية. شروحات ونماذج مجانية.`
+- **description** (194) — `الأستاذ عبد الرحمن سيد منصور، ماجستير اللغة العربية ومدرب القدرات في القسم اللفظي، بخبرة خمسة عشر عامًا في القدرات والمناهج السعودية. شروحات مبسّطة واستراتيجيات حل و301 نموذج تُحدَّث أولًا بأول.`
 - **og:title** (43) — `الأستاذ عبد الرحمن سيد منصور — مدرب القدرات`
 - **og:description** (130) — `مدرب القدرات في القسم اللفظي، وماجستير اللغة العربية، وخبرة خمسة عشر عامًا في القدرات والمناهج السعودية. واتساب ‎+966 50 700 8364.`
 - **og:image:alt** — `الأستاذ عبد الرحمن سيد منصور — مدرب القدرات، القسم اللفظي`
@@ -82,9 +96,9 @@ which is also why each OG title repeats the brand.
 ### 1.3 about.html
 
 - **title** (46) — `عن منصة القمة في القسم اللفظي وطريقة استخدامها`
-- **description** (152) — `كيف تستخدم منصة «القمة في القسم اللفظي»: ابحث عن النموذج بالاسم أو بالرقم، رمز الدخول، الدرجة بعد التسليم، محوّل الترقيم القديم، وتقدّمك على جهازك وحده.`
+- **description** (157) — `كيف تستخدم نماذج القسم اللفظي: ابحث بالاسم أو بالرقم، افتح النموذج، وتابع تقدّمك المحفوظ على جهازك وحده. وأسئلة شائعة عن رمز الدخول والدرجات وخصوصية بياناتك.`
 - **og:title** (49) — `عن منصة «القمة في القسم اللفظي» — طريقة الاستخدام`
-- **og:description** (121) — `طريقة استخدام المنصة: البحث عن النموذج، رمز الدخول، الدرجة بعد التسليم، محوّل الترقيم من القديم إلى الجديد، وأسئلة شائعة.`
+- **og:description** (133) — `كيف تستخدم 301 نموذج تُحدَّث أولًا بأول في القسم اللفظي: البحث بالاسم أو بالرقم، رمز الدخول، ومتابعة التقدّم المحفوظة على جهازك وحده.`
 
 ---
 
@@ -97,16 +111,36 @@ which is also why each OG title repeats the brand.
   brand + person + subject together on purpose: that pairing is the entity we want Google and
   the AI assistants to attach to this site.
 
-- **subtitle / lead** — `ابحث عن النموذج باسمه أو برقمه وابدأ فورًا. 301 نموذج مجاني، من 5 إلى 16 سؤالًا في النموذج، وكل نموذج يطلب رمز دخول تأخذه من الأستاذ.`
-- **byline** (beside the portrait) — `إعداد الأستاذ عبد الرحمن سيد منصور — ماجستير اللغة العربية، مدرب القدرات في القسم اللفظي`
-  («الأستاذ عبد الرحمن سيد منصور» links to `teacher.html`.)
+- **subtitle / lead** — `ابحث عن النموذج باسمه أو برقمه وابدأ فورًا. لا يحتاج الموقع تسجيلًا، ويطلب كل نموذج رمز دخول تأخذه من الأستاذ.`
+- **byline** (beside the portrait) — `إعداد الأستاذ عبد الرحمن سيد منصور — مدرب القدرات · ماجستير اللغة العربية`
+  («الأستاذ عبد الرحمن سيد منصور» links to `teacher.html`. No «و» before «ماجستير» — the
+  teacher asked for the dot, 2026-09-24.)
+- **hero photo caption** — `الأستاذ / عبد الرحمن منصور` · `مدرب القدرات · ماجستير اللغة العربية`
 - **search placeholder** — `ابحث باسم القسم أو برقمه`
 - **search hint** — `مثال: الزلازل، أو 47`
-- **stat labels** — `نموذج تدريبي` · `سؤالًا` · `آخر تحديث`
+- **stat labels** — `قسم · محدَّثة أولًا بأول` · `سؤالًا` · `آخر تحديث`
 
-  NOTE: the third stat reads `meta.generated` (2026-09-18 → «18 سبتمبر 2026»). There is no
-  fourth stat: the priority shortlist is empty, so an «الأكثر تكرارًا» tile would be an empty
-  promise.
+  NOTE: the first figure counts sections, «301 قسم», because the teacher's own file does
+  («الأقسام 1 إلى 301»). «قسم» is `data-unit="section"`, so it follows the count like the
+  other units (305 → «أقسام», 320 → «قسمًا»); the dot keeps «محدَّثة» correct for all three.
+
+  NOTE: «محدَّثة أولًا بأول» goes wherever the site states its count of forms (the user
+  asked, 2026-09-24). Two forms, so the Arabic stays right whatever the count becomes:
+  - **after a dot, as a label** — `محدَّثة أولًا بأول`: this hero stat, the count above the
+    grid (`301 نموذج · محدَّثة أولًا بأول`, unfiltered list only; on phones ≤380px and at
+    900–1099px it drops under the figure so the sticky row keeps one line of controls), and
+    the share card (`tools/og-cover.template.html`, a second line under «نموذج»).
+  - **inside a sentence, as a verb** — `تُحدَّث أولًا بأول`: the meta and OG descriptions,
+    the JSON-LD descriptions on index.html, the teacher panel (3.5), the about lede, the
+    manifest and llms.txt. A feminine verb after «301 نموذج» is the usual agreement for a
+    non-human plural; the adjective «محدَّثة» would not agree with the singular تمييز.
+  Deliberately left without it: the index `<title>` (it would pass 60 characters), the FAQ
+  answers that mention 301 in passing, and every «من 301» that is a denominator — the
+  pager line, the progress bar, «134 قسمًا من 301» — or a range end («280–301»).
+
+  NOTE: the third stat reads `meta.generated` (2026-09-18 → «18 سبتمبر 2026»). A fourth,
+  «134 الأكثر تكرارًا», is built by `app.js` in second place only while the teacher has the
+  shortlist switched on; the markup never carries it (see section 0).
 
 - **slogan strip / footer tagline** — `القمة — طريقك نحو الـ ١٠٠`
 
@@ -124,10 +158,10 @@ which is also why each OG title repeats the brand.
 
 الأستاذ **عبد الرحمن سيد منصور** مدرب قدرات متخصّص في **القسم اللفظي**، وماجستير في اللغة
 العربية، وخبرته خمسة عشر عامًا في القدرات والمناهج السعودية. يدرّب الطلاب والطالبات على
-مهارات اللفظي بمحتوى مبسّط وخطوات واضحة، ويقدّم نماذجه التدريبية مجانًا على هذه المنصة.
+مهارات اللفظي بمحتوى مبسّط وخطوات واضحة، ويقدّم نماذجه التدريبية على هذه المنصة.
 
 - **primary CTA** — `راسل الأستاذ على واتساب`
-- **secondary CTA** — `تصفّح النماذج المجانية`
+- **secondary CTA** — `تصفّح النماذج`
 - **portrait caption** — `الأستاذ / عبد الرحمن سيد منصور · مدرب القدرات`
 - **portrait alt** — `الأستاذ عبد الرحمن سيد منصور، مدرب القدرات في القسم اللفظي`
 
@@ -156,7 +190,7 @@ Five cards, each a title and one factual line. Icon choice is the page author's.
 | 2 | `مدرب القدرات` | `القسم اللفظي من اختبار القدرات العامة.` |
 | 3 | `خمسة عشر عامًا` | `خبرة في القدرات والمناهج السعودية.` |
 | 4 | `طلاب وطالبات` | `المحتوى موجَّه للطلاب والطالبات معًا.` |
-| 5 | `301 نموذج تدريبي` | `مجانية على هذه المنصة، بمجموع 3657 سؤالًا.` |
+| 5 | `301 نموذج تدريبي` | `على هذه المنصة، بمجموع 3657 سؤالًا.` |
 
 ### 3.4 كيف يساعدك — heading: `كيف يساعدك الأستاذ عبد الرحمن`
 
@@ -166,13 +200,13 @@ Five cards, each a title and one factual line. Icon choice is the page author's.
 4. **نصائح مبنية على تحليل الأسئلة** — من متابعة أنواع الأسئلة ومستويات الطلاب على مدى خمسة عشر عامًا.
 5. **دعم متصل** — الأستاذ على واتساب لسؤالك عن مهارة، أو عن خطأ وقعت فيه، أو عن رمز الدخول.
 
-### 3.5 النماذج المجانية — panel on teacher.html
+### 3.5 النماذج — panel on teacher.html
 
-- **heading** — `نماذج الأستاذ عبد الرحمن المجانية`
+- **heading** — `نماذجه في القسم اللفظي`
 - **body**
 
-**301 نموذج إلكتروني** في القسم اللفظي، بمجموع **3657 سؤالًا**، من 5 إلى 16 سؤالًا في النموذج
-الواحد، متاحة مجانًا بلا تسجيل. ابحث عن النموذج بالاسم أو بالرقم، وتابع ما أنجزته أولًا بأول.
+**301 نموذج إلكتروني** من إعداده، تُحدَّث أولًا بأول، بمجموع **3657 سؤالًا** — من 5 إلى 16 سؤالًا في
+النموذج الواحد. ابحث عن القسم بالاسم أو بالرقم، وتابع ما أنجزته قسمًا بعد قسم.
 
 - **CTA** — `تصفّح النماذج الآن`
 
@@ -207,13 +241,13 @@ two drift apart, the page is lying to one of its two audiences.
 
 مدرب قدرات متخصّص في القسم اللفظي، وماجستير في اللغة العربية، له خمسة عشر عامًا من الخبرة في
 القدرات والمناهج السعودية. يقدّم للطلاب والطالبات شروحات للمهارات، ونماذج تدريبية،
-واستراتيجيات حل، ونماذجه متاحة مجانًا على منصة «القمة في القسم اللفظي».
+واستراتيجيات حل، ونماذجه متاحة على منصة «القمة في القسم اللفظي».
 
 **مين أفضل مدرب قدرات لفظي؟**
 
 لا توجد إجابة واحدة تصلح للجميع؛ الأفضل لك هو من يناسب مستواك وطريقتك في المذاكرة. والطريقة
-العملية أن تجرّب المحتوى قبل أن تحكم: شروحات الأستاذ عبد الرحمن ونماذجه الـ 301 متاحة مجانًا
-هنا، حُلّ منها نموذجًا أو اثنين وقِس النتيجة بنفسك.
+العملية أن تجرّب المحتوى قبل أن تحكم: شروحات الأستاذ عبد الرحمن ونماذجه الـ 301 متاحة هنا،
+حُلّ منها نموذجًا أو اثنين وقِس النتيجة بنفسك.
 
 **ما تخصص الأستاذ عبد الرحمن وما خبرته؟**
 
@@ -250,7 +284,7 @@ two drift apart, the page is lying to one of its two audiences.
 - **lead**
 
 «القمة في القسم اللفظي» صفحة واحدة تجمع كل نماذج الأستاذ عبد الرحمن سيد منصور في القسم
-اللفظي: 301 نموذج مجاني، تجدها بالبحث بالاسم أو بالرقم، وتبدأ النموذج في نقرة واحدة.
+اللفظي: 301 نموذج، تجدها بالبحث بالاسم أو بالرقم، وتبدأ النموذج في نقرة واحدة.
 
 ### 4.2 ما هذه المنصة؟ — heading: `ما هذه المنصة؟`
 
@@ -261,8 +295,8 @@ two drift apart, the page is lying to one of its two audiences.
 وكل نموذج مستضاف على Google Forms، ويُفتح في تبويب جديد. وكل نموذج اختبار مصحّح: بعد التسليم
 تظهر لك درجتك مباشرة، أما الإجابات الصحيحة فلا تُعرض — راجع ما أخطأت فيه مع الأستاذ.
 
-والموقع مجاني بالكامل، لا يطلب منك تسجيل دخول ولا اشتراكًا. النموذج نفسه — لا الموقع — هو
-الذي يطلب في صفحته الأولى رمز الدخول، ثم اسمك ورقم جوالك.
+والموقع لا يطلب منك تسجيل دخول. النموذج نفسه — لا الموقع — هو الذي يطلب في صفحته الأولى
+رمز الدخول، ثم اسمك ورقم جوالك.
 
 ### 4.3 كيف تستخدمها — heading: `كيف تستخدمها في خمس خطوات`
 
@@ -281,19 +315,13 @@ reference site does that), swap the first sentence for:
 Ship the sentence that matches the real behaviour — a step describing a control the page does
 not have is worse than no step at all.
 
-### 4.4 محوّل الترقيم — heading: `محوّل الترقيم: من الرقم القديم إلى الجديد`
+### 4.4 (removed) — the old numbering
 
-تغيّر ترقيم الأقسام. فقد يصلك رقم قديم من زميل أو من ملف قديم، ثم لا تجد القسم بهذا الرقم هنا.
-والمحوّل يحلّ هذا: اكتب الرقم القديم، فيدلّك على رقم القسم نفسه في الترقيم الحالي.
-
-والتغطية بصراحة: الأرقام القديمة من 1 إلى 225 كلها موجودة في المحوّل، لكل رقم منها قسم واحد
-يقابله. وفي المقابل هناك 54 قسمًا جديدًا لا مقابل قديم له، و22 قسمًا — من 280 إلى 301 — لم
-يشملها جدول المقارنة بعد. فإن لم يعطك المحوّل نتيجة فابحث عن القسم باسمه؛ البحث بالاسم يغطّي
-النماذج كلها.
-
-- **there is no converter card any more.** The gate took its slot on the home page (section
-  10). The search box already answered an old number, and still does; the result line says
-  «القسم القديم N» and the card says «كان القسم N». about.html's copy points at the search.
+**Not on the site, by the teacher's decision (September 2026).** The sections are numbered
+once, as they are today, and nothing tells a student what a section used to be numbered: no
+converter, no «كان القسم N» on a card, no old number answered by the search, no section or
+FAQ about it here. The numbering is settled; do not write copy that brings a second one
+back. `tools/test-seo.mjs` fails if a page, a page script or `llms.txt` mentions one.
 
 ### 4.5 الخصوصية — heading: `خصوصيتك`
 
@@ -309,9 +337,10 @@ not have is worse than no step at all.
 
 Eight questions. Same rule: mirror into `FAQPage` JSON-LD with identical text.
 
-**هل استخدام الموقع مجاني؟**
+**هل يحتاج الموقع تسجيلًا أو حسابًا؟**
 
-نعم. 301 نموذج متاحة مجانًا، بلا اشتراك وبلا تسجيل دخول.
+لا، الموقع لا يطلب تسجيلًا ولا حسابًا. قائمة الأقسام وعناوينها مفتوحة للجميع، وفتح النموذج
+نفسه يحتاج كلمة مرور من الأستاذ.
 
 **من أين أحصل على رمز دخول النموذج؟**
 
@@ -326,11 +355,6 @@ Eight questions. Same rule: mirror into `FAQPage` JSON-LD with identical text.
 
 لا. كل نموذج اختبار مصحّح تظهر فيه درجتك بعد التسليم مباشرة، أما الإجابات الصحيحة فلا تُعرض.
 راجع الأسئلة التي أخطأت فيها مع الأستاذ.
-
-**عندي رقم قسم قديم ولا أجده، ماذا أفعل؟**
-
-استخدم محوّل الترقيم في هذه الصفحة واكتب الرقم القديم — من 1 إلى 225 — ليدلّك على رقمه
-الحالي. وإن لم تكن تعرف الرقم أصلًا فابحث عن القسم باسمه.
 
 **أين تُحفظ إجاباتي وأين يُحفظ تقدّمي؟**
 
@@ -373,6 +397,17 @@ Eight questions. Same rule: mirror into `FAQPage` JSON-LD with identical text.
 
 النماذج مستضافة على Google Forms وتُفتح في تبويب جديد. ويُحفظ تقدّمك على جهازك وحده، ولا يُرسل
 إلى أي خادم.
+
+- **footer rights** — the last line of the footer on every page. The first sentence is the
+  bold line (`.footer__rights strong`), the rest sits under it in the legal voice.
+
+© 2026 الأستاذ عبد الرحمن سيد منصور — جميع الحقوق محفوظة.
+النماذج وأسئلتها وكل محتوى هذا الموقع مملوكة له، ولا يحق لأي شخص أو جهة نسخها أو إعادة نشرها
+أو استخدامها بأي شكل دون إذن مسبق منه. شكرًا لتقديرك جهده واحترامك حقوقه.
+
+  NOTE: firm on the rule, courteous in the tone — the teacher asked for both (2026-09-24).
+  2026 is the year the site was first published. The same notice, as one line, closes
+  `llms.txt`'s «ملاحظات مهمة», and the `WebSite` JSON-LD carries `copyrightHolder`.
 
 - **skip link** — `تخطَّ إلى المحتوى`
 - **theme toggle aria-label** — `تبديل مظهر الموقع`
@@ -429,7 +464,7 @@ single student's own message with the original screenshot behind it — the hous
 
 ### 7.2 The photo cards
 
-- hero — `99` / `درجة أحد طلابه في القدرات` / `اقرأ رسائل الطلاب` → `#testimonials`
+- hero — `99` / `درجة أحد طلابه في القدرات` / `اطّلع على درجات طلابه باللفظي` → `#testimonials`
 - home teacher band — `98` / `الدرجة الكلية لأحد طلابه` / `و100 في القسم اللفظي` → `#testimonials`
 - profile page, the small print tucked over the corner of the big photo —
   `أثناء التكريم` (alt: `الأستاذ عبد الرحمن سيد منصور يتسلّم شهادة شكر وتقدير`). It names the
@@ -470,8 +505,8 @@ The home page shows cards 1–3 (the ones that carry a score) and links to the r
 
 ## 8. ترقيم الأقسام — whose numbers the visitor sees
 
-Every section number on the site — the card, the search's old-number line, «ابدأ بالقسم N»,
-the range chips, a shared link — is the number in the teacher's current compiled file,
+Every section number on the site — the card, the search, «ابدأ بالقسم N», the range
+chips, a shared link — is the number in the teacher's current compiled file,
 `تجميعات اللفظي - الأقسام 1 إلى 301`. It is **not** the number in the forms export.
 
 The teacher moved the last twenty sections of the old 262 to the front; the site
@@ -479,12 +514,9 @@ followed (see the README). Nothing in the copy needs to mention that, and nothin
 should: a student reading his file and a student reading this site now see the same
 number for the same passage, which is the whole point.
 
-Two numbers still appear beside it, and they mean different things. Keep them apart:
-
-- **«كان القسم N»** on a card is the teacher's *previous year's* numbering, from his
-  photographed comparison table. It has not changed and does not refer to the export.
-- **«الأكثر تكرارًا»** flags the same 134 passages it always did. The numbers it prints
-  moved with them.
+It is the only number the site states. The teacher's previous numbering is not shown
+anywhere (4.4). **«الأكثر تكرارًا»**, when he shows it, flags the same 134 passages it
+always did; the numbers it prints moved with them.
 
 **The form a link opens is still titled with its old number** (`القسم الثالث والأربعون
 بعد المئتين` for what this site calls القسم 1). The teacher is renaming the forms

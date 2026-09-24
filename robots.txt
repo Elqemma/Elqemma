@@ -1,6 +1,6 @@
 # القمة في القسم اللفظي — الأستاذ عبد الرحمن سيد منصور
-# Everything here is free, public study material. Every well-behaved crawler is
-# welcome to read it, index it, and quote it.
+# Everything here is public study material, all rights reserved to the teacher.
+# Every well-behaved crawler is welcome to read it, index it, and quote it.
 #
 # Two exceptions, and neither is a security measure — a disallow line is a
 # request, and the repository is public anyway. They are here so the teacher's

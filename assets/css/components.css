@@ -1044,6 +1044,28 @@ a.tile:not([href]) {
   font-variant-numeric: tabular-nums;
 }
 
+/* «محدَّثة أولًا بأول» follows the unfiltered count. Where the sticky row is
+   tight — the narrowest phones, and the laptop widths where the filters first
+   sit inline — it drops under the figure instead, so the controls keep their
+   place in the row rather than wrapping onto a second one. The upper bound
+   leaves room for the status counts to grow once a student has progress. */
+.result-count__fresh::before {
+  content: " · ";
+}
+
+@media (max-width: 380px), (min-width: 900px) and (max-width: 1099px) {
+  /* At the caption size the inline filters still fit beside it at 900px, even
+     with three-digit counts in the status pills; at 14px they wrapped. */
+  .result-count__fresh {
+    display: block;
+    font-size: var(--fs-xs);
+  }
+
+  .result-count__fresh::before {
+    content: none;
+  }
+}
+
 .toolbar__controls {
   display: flex;
   align-items: center;
@@ -2220,6 +2242,15 @@ a.tile:not([href]) {
   color: var(--ink-3);
 }
 
+/* The rights line leads its paragraph on a line of its own; the sentence under
+   it stays in the muted legal voice. */
+.footer__rights strong {
+  display: block;
+  margin-block-end: var(--sp-1);
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
 /* --------------------------------------------------------------------------
    Utilities
    -------------------------------------------------------------------------- */
@@ -3268,31 +3299,6 @@ a.tile:not([href]) {
 }
 
 /* --------------------------------------------------------------------------
-   «كان القسم N» — the old number, on the card
-
-   A quiet outline pill, not a filled one: the gold fill belongs to the
-   shortlist pill, and two filled pills in one meta row would compete.
-   -------------------------------------------------------------------------- */
-
-.card__old {
-  padding: 2px 8px;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--r-full);
-  color: var(--ink-3);
-  font-weight: 600;
-}
-
-/* A number query that answered with the section's OLD number needs one line of
-   explanation next to the count, or the result looks like a mismatch. */
-.result-count__note {
-  display: block;
-  margin-block-start: 2px;
-  color: var(--gold-ink);
-  font-size: var(--fs-xs);
-  font-weight: 600;
-}
-
-/* --------------------------------------------------------------------------
    Prose extras used by the teacher and about pages
    -------------------------------------------------------------------------- */
 
@@ -3558,7 +3564,7 @@ a.tile:not([href]) {
   inset-block-end: -6%;
   inset-inline-end: -17%;
   width: 40%;
-  aspect-ratio: 4 / 5;
+  aspect-ratio: 5 / 7;
   margin: 0;
   border-radius: var(--r-lg);
   overflow: hidden;
@@ -3658,6 +3664,21 @@ a.tile:not([href]) {
     order: 0;
     justify-self: center;
     padding-block-end: var(--sp-12);
+  }
+}
+
+/* The hero card's role line («مدرب القدرات · ماجستير اللغة العربية») must stay
+   on one line: a second line lifts the name up under the floating score chip.
+   Below 900px the card is too narrow for it at the usual size. */
+@media (max-width: 899px) {
+  .hero__brand .photo-card__role {
+    font-size: var(--fs-xs);
+  }
+}
+
+@media (max-width: 559px) {
+  .hero__brand .photo-card__caption {
+    padding-inline: var(--sp-4);
   }
 }
 

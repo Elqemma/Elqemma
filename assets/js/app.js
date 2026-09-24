@@ -17,17 +17,14 @@
  * password decrypts them. Every locked state below follows from that one fact:
  * a locked card is not hiding its link, it does not have one. See lock.js.
  *
- * Two things here that the shape of this dataset forced:
- *   - Every section carries its own question count (5–16), so the count is read
- *     off the record rather than from one figure in the metadata.
- *   - The teacher renumbered his sections. A record may carry `o`, the number it
- *     used to have; search.js scores a match on it and the card states it, so a
- *     student's old notebook is still a valid index.
+ * Every section carries its own question count (5–16), so the count is read
+ * off the record rather than from one figure in the metadata.
  */
 
 import { parseQuery, searchExams, highlightRanges } from './search.js';
 import { store, exportProgress, importProgress } from './store.js';
 import { lock, REASON } from './lock.js';
+import { loadShortlist } from './shortlist.js';
 
 /**
  * Cards on a page. 24 divides by two, three and four, so the last row is full
@@ -114,7 +111,6 @@ const el = {
   keyToggleLabel: $('#keyToggleLabel'),
   keyToggleCount: $('#keyToggleCount'),
   keyHint: $('#keyHint'),
-  sortKeyOption: $('#sortKeyOption'),
   tileKey: $('#tileKey'),
   tileKeyLabel: $('#tileKeyLabel'),
   tileKeyMeta: $('#tileKeyMeta'),
@@ -134,8 +130,7 @@ const el = {
   statTotal: $$('[data-stat="total"]'),
   statQuestions: $$('[data-stat="questions"]'),
   statUpdated: $$('[data-stat="updated"]'),
-  statPriority: $$('[data-stat="priority"]'),
-  statKeyItem: $('.hero__stats-key'),
+  heroStats: $('#heroStats'),
 };
 
 /* -------------------------------------------------------------------------- */
@@ -160,12 +155,6 @@ const state = {
   pages: 1,
   /** Result count per status tab, under the current range, shortlist and search. */
   counts: { all: 0, todo: 0, done: 0, fav: 0 },
-  /**
-   * Set when a number query matched a section by the number it USED to carry,
-   * so the result line can say so instead of looking like a mismatch:
-   * { old, exam }.
-   */
-  oldHit: null,
   /**
    * The teacher's "most repeated" shortlist, as published in the dataset:
    * { label, blurb, count, updated } — or null when this build carries none,
@@ -275,6 +264,14 @@ const UNITS = {
     many: (n) => `${arabicNumber(n)} سؤالًا`,
     other: (n) => `${arabicNumber(n)} سؤال`,
   },
+  section: {
+    zero: () => 'لا أقسام',
+    one: () => 'قسم واحد',
+    two: () => 'قسمان',
+    few: (n) => `${arabicNumber(n)} أقسام`,
+    many: (n) => `${arabicNumber(n)} قسمًا`,
+    other: (n) => `${arabicNumber(n)} قسم`,
+  },
 };
 
 /** e.g. countPhrase(1, 'exam') -> "نموذج واحد", countPhrase(13, 'question') -> "13 سؤالًا" */
@@ -327,16 +324,17 @@ function debounce(fn, wait) {
 /* -------------------------------------------------------------------------- */
 /* The shortlist                                                               */
 /*                                                                             */
-/* `p` is stamped on a record by tools/build-data.mjs from                      */
-/* data/source/priority.json. Nothing here knows which numbers are on the list: */
-/* replacing that file and rebuilding is the whole update procedure.            */
+/* `p` is set on a record at boot, from assets/data/shortlist.json, and only    */
+/* when the teacher has switched the shortlist on (see shortlist.js). Nothing   */
+/* here knows which numbers are on the list, and with the switch off no record */
+/* carries the flag at all.                                                    */
 /* -------------------------------------------------------------------------- */
 
 const isKey = (exam) => Boolean(exam?.p);
 
-/** The published label, or a safe default if this build carries no shortlist. */
+/** The published label. Only ever asked for while the shortlist is on. */
 function keyLabel() {
-  return state.priority?.label || 'الأكثر تكرارًا';
+  return state.priority?.label || '';
 }
 
 function parseRange(value) {
@@ -491,19 +489,8 @@ function compute() {
   const pool = activePool();
   state.query = parseQuery(state.q);
 
-  const { results, fuzzy, via } = searchWithin(pool, state.status);
+  const { results, fuzzy } = searchWithin(pool, state.status);
   state.fuzzy = fuzzy;
-
-  // «160» is a perfectly good way to ask for a section — it just is not the
-  // number that section carries today. Say which one answered, rather than
-  // letting the student wonder why they got section 21.
-  state.oldHit = null;
-  if (via && via.size) {
-    const hit = results.find((e) => via.get(e.n) === 'o');
-    if (hit && Number.isInteger(hit.o) && hit.o > 0) {
-      state.oldHit = { old: hit.o, exam: hit, alsoCurrent: state.byNumber.has(hit.o) };
-    }
-  }
   countStatuses(pool);
 
   // A text query is already ranked by relevance; only re-sort when the user
@@ -658,21 +645,6 @@ function buildCard(exam) {
     $('[data-meta="questions"]', node)?.remove();
   }
 
-  // `o` is the number this section carried before the renumbering: a positive
-  // number is the old number, 0 means the teacher's table marks it as new, and
-  // an absent `o` means the table does not cover this section at all. Only the
-  // first case says anything useful on a card, so the other two drop the pill.
-  const oldPill = $('[data-meta="old"]', node);
-  if (oldPill) {
-    if (Number.isInteger(exam.o) && exam.o > 0) {
-      oldPill.hidden = false;
-      $('[data-field="old"]', oldPill).textContent = `كان القسم ${arabicNumber(exam.o)}`;
-      oldPill.title = 'رقم هذا القسم في الترقيم القديم';
-    } else {
-      oldPill.remove();
-    }
-  }
-
   const cta = $('.card__cta', node);
   if (!lock.isUnlocked) {
     // Locked. Not a disabled link — a button, because while the gate is shut
@@ -821,17 +793,16 @@ function renderCount() {
       : `${arabicNumber(n)} من ${countPhrase(total, 'exam')}`;
   el.count.innerHTML = '';
   el.count.append(Object.assign(document.createElement('b'), { textContent: text }));
-  el.countLive.textContent = n === 0 ? 'لا توجد نتائج' : `${text} في النتائج`;
-
-  if (state.oldHit) {
-    const note = Object.assign(document.createElement('span'), {
-      className: 'result-count__note',
-      textContent: state.oldHit.alsoCurrent
-        ? `\u0648\u0627\u0644\u0631\u0642\u0645 ${arabicNumber(state.oldHit.old)} \u0643\u0627\u0646 \u0623\u064a\u0636\u064b\u0627 \u0631\u0642\u0645 \u0627\u0644\u0642\u0633\u0645 ${arabicNumber(state.oldHit.exam.n)} \u0641\u064a \u0627\u0644\u062a\u0631\u0642\u064a\u0645 \u0627\u0644\u0642\u062f\u064a\u0645`
-        : `\u0627\u0644\u0631\u0642\u0645 ${arabicNumber(state.oldHit.old)} \u0631\u0642\u0645 \u0642\u062f\u064a\u0645 \u2014 \u0648\u0647\u0648 \u0627\u0644\u0642\u0633\u0645 ${arabicNumber(state.oldHit.exam.n)} \u0641\u064a \u0627\u0644\u062a\u0631\u0642\u064a\u0645 \u0627\u0644\u062d\u0627\u0644\u064a`,
-    });
-    el.count.append(note);
+  // The whole list, unfiltered, carries the same promise as the hero figure.
+  if (n === total && total > 0) {
+    el.count.append(
+      Object.assign(document.createElement('span'), {
+        className: 'result-count__fresh',
+        textContent: 'محدَّثة أولًا بأول',
+      }),
+    );
   }
+  el.countLive.textContent = n === 0 ? 'لا توجد نتائج' : `${text} في النتائج`;
 }
 
 function renderActiveFilters() {
@@ -1912,29 +1883,31 @@ async function uploadProgress(file) {
 /* -------------------------------------------------------------------------- */
 
 /**
- * Everything the shortlist adds to the page, set up once from the dataset.
- * A build without a shortlist leaves all of it hidden — the switch, the tile,
- * the sort option and the second progress track — rather than showing an
- * empty promise.
+ * Everything the shortlist adds to the page, set up once — and only when the
+ * teacher has switched it on (see shortlist.js). With it off this does
+ * nothing: the markup ships the switch, the tile and the progress track hidden
+ * and wordless, and the hero figure and the sort option are not in it at all,
+ * so there is nothing to hide and no word of it in the page.
  */
 function renderPriorityMeta(priority) {
   state.priority = priority || null;
-
-  // No shortlist in this build: every affordance that mentions one stays
-  // hidden. The hero figure ships hidden in the markup so it never flashes a
-  // «0 الأكثر تكرارًا» before the data arrives.
-  if (!state.priority) {
-    if (el.statKeyItem) el.statKeyItem.hidden = true;
-    return;
-  }
+  if (!state.priority) return;
 
   const label = keyLabel();
   const count = arabicNumber(state.priority.count);
 
-  el.statPriority.forEach((n) => (n.textContent = count));
-  document.querySelectorAll('[data-unit="priority"]').forEach((n) => {
-    n.textContent = label;
-  });
+  // The hero figure goes second, beside the total it is a part of. Built here
+  // rather than hidden in the markup: a hidden item would still be counted by
+  // the stats row's :nth-child dividers.
+  if (el.heroStats) {
+    const item = document.createElement('li');
+    item.className = 'hero__stats-key';
+    item.append(
+      Object.assign(document.createElement('b'), { className: 'tnum', textContent: count }),
+      Object.assign(document.createElement('span'), { textContent: label }),
+    );
+    el.heroStats.firstElementChild?.after(item);
+  }
 
   el.keyToggleLabel.textContent = label;
   el.keyToggleCount.textContent = count;
@@ -1943,10 +1916,10 @@ function renderPriorityMeta(priority) {
   el.tileKeyLabel.textContent = label;
   el.tileKey.hidden = false;
 
-  if (el.statKeyItem) el.statKeyItem.hidden = false;
-
-  el.sortKeyOption.textContent = `${label} أولًا`;
-  el.sortKeyOption.hidden = false;
+  // A real option, not a hidden one: iOS lists <option hidden> anyway.
+  el.sortSelect.append(
+    Object.assign(document.createElement('option'), { value: 'key', textContent: `${label} أولًا` }),
+  );
 }
 
 function renderMeta(meta) {
@@ -1960,6 +1933,9 @@ function renderMeta(meta) {
     // Exactly what tools/build-data.mjs stamps into the markup: if the two ever
     // disagree the hero silently reflows on boot, which is a layout shift.
     n.textContent = unitNoun(meta.total, 'exam');
+  });
+  document.querySelectorAll('[data-unit="section"]').forEach((n) => {
+    n.textContent = unitNoun(meta.total, 'section');
   });
   document.querySelectorAll('[data-unit="question"]').forEach((n) => {
     n.textContent = unitNoun(meta.totalQuestions ?? 0, 'question');
@@ -2037,6 +2013,10 @@ function showError() {
 async function boot() {
   document.documentElement.classList.add('has-js');
 
+  // In flight beside the dataset rather than after it. Resolves to null — the
+  // shortlist off — far more often than not, and never rejects.
+  const shortlistReady = loadShortlist();
+
   try {
     const response = await fetch(DATA_URL, { cache: 'no-cache' });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -2054,11 +2034,30 @@ async function boot() {
     data.meta = data.meta || {};
     data.meta.total = data.exams.length;
 
-    // Records were just dropped for unusable links; the shortlist count has to
-    // follow, or the page would advertise forms it cannot open.
-    if (data.meta.priority) {
-      const flagged = data.exams.filter((e) => e.p).length;
-      data.meta.priority = flagged ? { ...data.meta.priority, count: flagged } : null;
+    // The shortlist, if the teacher has switched it on, marks the records that
+    // survived the check above — so its count is what the page can open, not
+    // what the list names.
+    // The dataset no longer carries the flag; a copy cached from before it
+    // stopped might, and must not show a badge the switch says is off.
+    data.meta.priority = null;
+    for (const exam of data.exams) delete exam.p;
+    const shortlist = await shortlistReady;
+    if (shortlist) {
+      const listed = new Set(shortlist.sections);
+      let flagged = 0;
+      for (const exam of data.exams) {
+        if (!listed.has(exam.n)) continue;
+        exam.p = 1;
+        flagged += 1;
+      }
+      if (flagged) {
+        data.meta.priority = {
+          label: shortlist.label,
+          blurb: shortlist.blurb,
+          updated: shortlist.updated,
+          count: flagged,
+        };
+      }
     }
 
     state.data = data;

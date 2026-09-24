@@ -1,5 +1,5 @@
 {
-  "builtAt": "2026-09-21T00:19:24.781Z",
+  "builtAt": "2026-09-24T00:29:42.346Z",
   "source": "data/source/forms.json",
   "published": 301,
   "excluded": [],
@@ -11,11 +11,6 @@
   "order": {
     "source": "تجميعات اللفظي - الأقسام 1 إلى 301 - محلول.docx",
     "renumbered": 262
-  },
-  "sectionMap": {
-    "mapped": 225,
-    "brandNew": 54,
-    "uncovered": 22
   },
   "priority": {
     "label": "الأكثر تكرارًا",

@@ -35,6 +35,8 @@ import { openLinks, validateLockFile } from '../assets/js/lock-crypto.js';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DATA = path.join(ROOT, 'assets/data/exams.json');
 const LOCK = path.join(ROOT, 'assets/data/unlock.json');
+const FEATURES = path.join(ROOT, 'assets/data/features.json');
+const SHORTLIST = path.join(ROOT, 'assets/data/shortlist.json');
 const CONCURRENCY = 8;
 
 const args = process.argv.slice(2);
@@ -73,13 +75,9 @@ console.log(`checking ${exams.length} records\n`);
 const problems = [];
 const fail = (message) => problems.push(message);
 const isText = (value) => typeof value === 'string' && value.trim() !== '';
-const isCount = (value) => Number.isInteger(value) && value >= 0;
 
 const urls = new Set();
 const shortUrls = new Set();
-const oldNumbers = new Map();
-const flaggedPriority = [];
-const sectionMap = { mapped: 0, brandNew: 0, uncovered: 0 };
 let previousNumber = 0;
 let totalQuestions = 0;
 let questionsMin = Infinity;
@@ -116,27 +114,12 @@ for (const [index, exam] of exams.entries()) {
   if (exam?.u !== undefined) fail(`${label} carries a plain form URL — rebuild with npm run build:data`);
   if (exam?.s !== undefined) fail(`${label} carries a plain short link — rebuild with npm run build:data`);
 
-  // `o` is tri-state: a positive old number, 0 for a section the source table
-  // marks as brand new, and absent for sections that table never covered. The
-  // converter says something different in each case, so a value outside those
-  // three states would silently mislabel a section.
-  if (exam?.o === undefined) {
-    sectionMap.uncovered += 1;
-  } else if (!isCount(exam.o)) {
-    fail(`${label} has an invalid old number: ${JSON.stringify(exam.o)}`);
-  } else if (exam.o === 0) {
-    sectionMap.brandNew += 1;
-  } else {
-    sectionMap.mapped += 1;
-    const owner = oldNumbers.get(exam.o);
-    if (owner !== undefined) fail(`${label} claims old number ${exam.o}, already taken by #${owner}`);
-    else oldNumbers.set(exam.o, exam.n);
-  }
+  // The site states each section's number as it is today and nothing else: a
+  // number it used to carry would be a number a student reads.
+  if (exam?.o !== undefined) fail(`${label} carries an old section number; the site states only today's numbers`);
 
-  if (exam?.p !== undefined) {
-    if (exam.p !== 1) fail(`${label} has an invalid priority flag: ${JSON.stringify(exam.p)}`);
-    else flaggedPriority.push(exam.n);
-  }
+  // The shortlist is flagged at run time, and only while it is switched on.
+  if (exam?.p !== undefined) fail(`${label} carries a shortlist flag; exams.json must not mention the shortlist`);
 }
 
 /* meta must describe these records and not a previous build of them: every
@@ -154,35 +137,51 @@ agrees('totalQuestions', totalQuestions);
 agrees('questionsMin', questionsMin);
 agrees('questionsMax', questionsMax);
 
-const declaredMap = meta.sectionMap ?? {};
-for (const key of ['mapped', 'brandNew', 'uncovered']) {
-  if (declaredMap[key] !== sectionMap[key]) {
-    fail(`meta.sectionMap.${key} says ${JSON.stringify(declaredMap[key])}, the records say ${sectionMap[key]}`);
-  }
+if (meta.sectionMap !== undefined) fail('exams.json carries meta.sectionMap; the old numbering is not published');
+
+/* «الأكثر تكرارًا» is hidden unless the teacher switches it on, so it lives
+ * apart from the dataset: the switch in features.json, the list and its copy in
+ * shortlist.json. Either state of the switch is valid here — the console
+ * commits it, and this runs on that commit — but its shape is not negotiable,
+ * and a list the page would apply must name sections that exist. */
+if (meta.priority !== undefined) fail('exams.json carries meta.priority; the shortlist belongs in shortlist.json');
+
+let features = null;
+try {
+  features = JSON.parse(fs.readFileSync(FEATURES, 'utf8'));
+} catch (error) {
+  fail(`features.json is missing or unreadable: ${error.message}`);
+}
+if (features && typeof features.shortlist !== 'boolean') {
+  fail(`features.json: "shortlist" must be true or false, not ${JSON.stringify(features.shortlist)}`);
 }
 
-// The shortlist is optional, but when it exists the two halves must agree: the
-// page renders its blurb from meta and filters the cards by the p flags.
-const priority = meta.priority ?? null;
-if (priority === null) {
-  if (flaggedPriority.length) fail(`${flaggedPriority.length} record(s) carry p=1 while meta.priority is null`);
-} else if (!Array.isArray(priority.sections)) {
-  fail('meta.priority exists but carries no sections[]');
-} else {
-  const listed = new Set(priority.sections);
-  const known = new Set(exams.map((exam) => exam.n));
-  const flagged = new Set(flaggedPriority);
-  if (!isText(priority.label)) fail('meta.priority.label is missing');
-  if (priority.count !== priority.sections.length) {
-    fail(`meta.priority.count says ${priority.count}, sections[] holds ${priority.sections.length}`);
+if (fs.existsSync(SHORTLIST)) {
+  let list = null;
+  try {
+    list = JSON.parse(fs.readFileSync(SHORTLIST, 'utf8'));
+  } catch (error) {
+    fail(`shortlist.json is unreadable: ${error.message}`);
   }
-  for (const n of listed) {
-    if (!known.has(n)) fail(`meta.priority lists #${n}, which is not in the dataset`);
-    else if (!flagged.has(n)) fail(`#${n} is on the shortlist but carries no p=1`);
+  if (list) {
+    const sections = Array.isArray(list.sections) ? list.sections : [];
+    const known = new Set(exams.map((exam) => exam.n));
+    if (!isText(list.label)) fail('shortlist.json: label is missing');
+    if (!sections.length) fail('shortlist.json: sections[] is empty');
+    if (list.count !== sections.length) {
+      fail(`shortlist.json: count says ${list.count}, sections[] holds ${sections.length}`);
+    }
+    if (new Set(sections).size !== sections.length) fail('shortlist.json: sections[] repeats a number');
+    for (const n of sections) {
+      if (!Number.isInteger(n)) fail(`shortlist.json: ${JSON.stringify(n)} is not a section number`);
+      else if (!known.has(n)) fail(`shortlist.json lists #${n}, which is not in the dataset`);
+    }
+    if (!isText(list.about?.heading) || !Array.isArray(list.about?.paragraphs) || !list.about.paragraphs.length) {
+      fail('shortlist.json: the about-page copy (about.heading, about.paragraphs) is missing');
+    }
   }
-  for (const n of flagged) {
-    if (!listed.has(n)) fail(`#${n} carries p=1 but is missing from meta.priority.sections`);
-  }
+} else if (features?.shortlist === true) {
+  fail('features.json switches the shortlist on, but there is no shortlist.json to show');
 }
 
 /* ------------------------------------ lock -------------------------------- */
@@ -254,7 +253,6 @@ if (problems.length) {
   console.log(`structure: ${exams.length} records, ${totalQuestions} questions (${questionsMin}-${questionsMax} each)`);
   console.log('           no record carries a link — they are sealed, not listed');
   console.log(`           lock: ${lockNote}`);
-  console.log(`           sections: ${sectionMap.mapped} mapped, ${sectionMap.brandNew} new, ${sectionMap.uncovered} uncovered`);
   console.log('           meta agrees with the records');
 }
 

@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>لوحة كلمة المرور — القمة في القسم اللفظي</title>
+    <title>لوحة المشرف — القمة في القسم اللفظي</title>
 
     <!--
       This page is not part of the site.
@@ -179,10 +179,11 @@
   <body>
     <main class="admin">
       <header class="admin__head">
-        <h1>لوحة كلمة المرور</h1>
+        <h1>لوحة المشرف</h1>
         <p>
-          من هنا تُغيَّر كلمة المرور التي يفتح بها الطلاب النماذج. الصفحة لا تحفظ شيئًا ولا
-          ترسل شيئًا؛ كل ما يظهر فيها يُفكّ تشفيره داخل متصفحك بكلمة مرور المشرف.
+          من هنا تُدار كلمة المرور التي يفتح بها الطلاب النماذج، وما يظهر لهم في الموقع. كل ما
+          يظهر فيها يُفكّ تشفيره داخل متصفحك بكلمة مرور المشرف، ولا يُرسل منها شيء إلا ما تنشره
+          أنت على GitHub.
         </p>
       </header>
 
@@ -290,45 +291,90 @@
 
         <p class="say" id="publishSay" role="status" aria-live="polite"></p>
 
-        <!-- Shown the first time only, until a token is saved. -->
-        <div class="field" id="ghSetup" hidden>
-          <p class="panel__note">
-            <strong>إعداد لمرة واحدة.</strong> الموقع يعيش على GitHub، وهذه الصفحة تحتاج إذنًا
-            لتكتب فيه نيابةً عنك. الإذن يُحفظ في متصفحك أنت فقط، ولا يُرسل إلا إلى GitHub.
-          </p>
-          <ol class="panel__note">
-            <li>
-              افتح
-              <a
-                href="https://github.com/settings/personal-access-tokens/new"
-                target="_blank"
-                rel="noopener noreferrer"
-                >صفحة إنشاء التوكن</a
-              >
-              (Fine-grained token).
-            </li>
-            <li>
-              <strong>Expiration:</strong> اختر أطول مدة متاحة.
-              <strong>Repository access:</strong> Only select repositories، واختر مستودع الموقع.
-            </li>
-            <li>
-              <strong>Permissions</strong> ← Repository permissions ← <strong>Contents</strong> ←
-              <strong>Read and write</strong>.
-            </li>
-            <li>اضغط Generate token، ثم الصقه هنا:</li>
-          </ol>
-          <label class="field__label" for="ghToken">التوكن</label>
-          <input class="input" id="ghToken" type="password" autocomplete="off" spellcheck="false" />
-          <div class="row">
-            <button type="button" class="btn btn--primary" id="ghSaveBtn">
-              <span>احفظ وانشر</span>
-            </button>
-          </div>
-        </div>
-
         <details class="advanced">
-          <summary>إعدادات متقدمة وطريقة يدوية</summary>
+          <summary>طريقة يدوية</summary>
           <div>
+            <p class="panel__note">
+              <strong>بديل يدوي</strong> لو تعذّر النشر المباشر: نزّل الملف وارفعه مكان
+              <code>assets/data/unlock.json</code> في المستودع — اسحبه فوق مجلد
+              <code>assets/data</code> على GitHub ثم <strong>Commit changes</strong>.
+            </p>
+            <div class="row">
+              <button type="button" class="btn btn--secondary btn--sm" id="downloadBtn">
+                <span>نزّل unlock.json</span>
+              </button>
+            </div>
+          </div>
+        </details>
+      </section>
+
+      <!-- 5. What students see ---------------------------------------------- -->
+      <section class="panel" id="featurePanel" aria-labelledby="featureTitle" hidden>
+        <h2 id="featureTitle">الأقسام الأكثر تكرارًا</h2>
+        <p class="panel__note">
+          الشارة الذهبية وفلترها وزرّها في الوصول السريع وشرحها في «عن المنصة» — كلها مخفية عن
+          الطلاب إلى أن تُظهرها من هنا. التغيير يصل للموقع خلال دقيقة أو دقيقتين، وتستطيع
+          الرجوع فيه متى شئت.
+        </p>
+        <dl class="facts" id="featureFacts">
+          <div>
+            <dt>الحالة الآن على الموقع</dt>
+            <dd id="featureState">…</dd>
+          </div>
+          <div>
+            <dt>عدد الأقسام في القائمة</dt>
+            <dd id="featureCount">…</dd>
+          </div>
+        </dl>
+        <div class="row">
+          <button type="button" class="btn btn--primary" id="featureBtn" disabled>
+            <span>أظهرها للطلاب</span>
+          </button>
+        </div>
+        <p class="say" id="featureSay" role="status" aria-live="polite"></p>
+      </section>
+
+      <!-- 6. The GitHub permission every publish uses ------------------------ -->
+      <section class="panel" id="ghPanel" aria-labelledby="ghTitle" hidden>
+        <details class="advanced" id="ghDetails">
+          <summary id="ghTitle">إعدادات النشر على GitHub</summary>
+          <div>
+            <!-- Shown the first time only, until a token is saved. -->
+            <div class="field" id="ghSetup" hidden>
+              <p class="panel__note">
+                <strong>إعداد لمرة واحدة.</strong> الموقع يعيش على GitHub، وهذه الصفحة تحتاج إذنًا
+                لتكتب فيه نيابةً عنك. الإذن يُحفظ في متصفحك أنت فقط، ولا يُرسل إلا إلى GitHub.
+              </p>
+              <ol class="panel__note">
+                <li>
+                  افتح
+                  <a
+                    href="https://github.com/settings/personal-access-tokens/new"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    >صفحة إنشاء التوكن</a
+                  >
+                  (Fine-grained token).
+                </li>
+                <li>
+                  <strong>Expiration:</strong> اختر أطول مدة متاحة.
+                  <strong>Repository access:</strong> Only select repositories، واختر مستودع الموقع.
+                </li>
+                <li>
+                  <strong>Permissions</strong> ← Repository permissions ← <strong>Contents</strong> ←
+                  <strong>Read and write</strong>.
+                </li>
+                <li>اضغط Generate token، ثم الصقه هنا:</li>
+              </ol>
+              <label class="field__label" for="ghToken">التوكن</label>
+              <input class="input" id="ghToken" type="password" autocomplete="off" spellcheck="false" />
+              <div class="row">
+                <button type="button" class="btn btn--primary" id="ghSaveBtn">
+                  <span>احفظ وانشر</span>
+                </button>
+              </div>
+            </div>
+
             <p class="panel__note">
               المستودع يُكتشف تلقائيًا من عنوان الموقع، والفرع يُقرأ من GitHub. املأ هذه الحقول
               فقط إذا كان الموقع على نطاق خاص أو أردت تجاوز الاكتشاف.
@@ -353,22 +399,12 @@
                 <span>امسح التوكن</span>
               </button>
             </div>
-
-            <p class="panel__note">
-              <strong>بديل يدوي</strong> لو تعذّر النشر المباشر: نزّل الملف وارفعه مكان
-              <code>assets/data/unlock.json</code> في المستودع — اسحبه فوق مجلد
-              <code>assets/data</code> على GitHub ثم <strong>Commit changes</strong>.
-            </p>
-            <div class="row">
-              <button type="button" class="btn btn--secondary btn--sm" id="downloadBtn">
-                <span>نزّل unlock.json</span>
-              </button>
-            </div>
           </div>
         </details>
+        <p class="say" id="ghSay" role="status" aria-live="polite"></p>
       </section>
 
-      <!-- 5. Less often ---------------------------------------------------- -->
+      <!-- 7. Less often ---------------------------------------------------- -->
       <section class="panel" id="morePanel" aria-labelledby="moreTitle" hidden>
         <h2 id="moreTitle">أدوات أقل استعمالًا</h2>
 

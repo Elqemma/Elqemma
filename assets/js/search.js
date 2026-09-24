@@ -14,14 +14,10 @@
  *       Parse the input box once per keystroke; reuse the result for every row.
  *       `digits` is the folded query when it is nothing but digits, else null.
  *
- *   searchExams(exams, query) -> { results, fuzzy, via }
+ *   searchExams(exams, query) -> { results, fuzzy }
  *       `results`  the matching exam records, best first (ties by section no.).
  *       `fuzzy`    true when only the typo-tolerant pass found anything, so the
  *                  caller can warn that the results are approximate.
- *       `via`      Map<exam.n, 'n' | 'o'>, filled only for number queries:
- *                  'n' = the number is the section's number today,
- *                  'o' = it is the number this section used to carry, so the
- *                  caller can label that row as an old-numbering hit.
  *
  *   highlightRanges(title, query) -> [[start, end), ...]
  *       Sorted, merged ranges over the ORIGINAL Arabic title.
@@ -174,21 +170,16 @@ const keyOf = (exam) => exam.k || exam._k || (exam._k = normalizeArabic(exam.t))
 const stemsOf = (exam) => exam.g || exam._g || (exam._g = stemKey(keyOf(exam)));
 
 /**
- * Score one record against a parsed query. Returns { s, via }; s === 0 means
- * no match. `fuzzy` enables the typo-tolerant fallback pass.
+ * Score one record against a parsed query. Returns the score; 0 means no
+ * match. `fuzzy` enables the typo-tolerant fallback pass.
  */
 function scoreExam(exam, query, fuzzy) {
   if (query.digits) {
+    // A number means the section's number on this site, and nothing else.
     const n = String(exam.n);
-    if (n === query.digits) return { s: 1000, via: 'n' };
-    // The series was renumbered, so a student reading an older worksheet types
-    // the old number. Answer it — but below today's number, because the same
-    // digits now mean a different section and that one has to lead.
-    // o === 0 is the build's marker for "new section, no old counterpart", so
-    // a record flagged that way must never answer the query "0".
-    if (exam.o > 0 && String(exam.o) === query.digits) return { s: 700, via: 'o' };
-    if (n.startsWith(query.digits)) return { s: 600, via: 'n' };
-    if (n.includes(query.digits)) return { s: 300, via: 'n' };
+    if (n === query.digits) return 1000;
+    if (n.startsWith(query.digits)) return 600;
+    if (n.includes(query.digits)) return 300;
     // Fall through: a number may also appear inside a title.
   }
 
@@ -218,12 +209,12 @@ function scoreExam(exam, query, fuzzy) {
       }
     }
 
-    if (!hit) return { s: 0, via: null }; // every token must match (AND)
+    if (!hit) return 0; // every token must match (AND)
     score += hit;
   }
 
   // Shorter titles that match are usually the more precise hit.
-  return { s: score + Math.max(0, 24 - key.length / 2), via: null };
+  return score + Math.max(0, 24 - key.length / 2);
 }
 
 /**
@@ -231,23 +222,21 @@ function scoreExam(exam, query, fuzzy) {
  * only if the strict pass found nothing.
  */
 export function searchExams(exams, query) {
-  if (query.isEmpty) return { results: exams.slice(), fuzzy: false, via: new Map() };
+  if (query.isEmpty) return { results: exams.slice(), fuzzy: false };
 
   for (const fuzzy of [false, true]) {
     const scored = [];
     for (const exam of exams) {
-      const { s, via } = scoreExam(exam, query, fuzzy);
-      if (s > 0) scored.push({ exam, s, via });
+      const s = scoreExam(exam, query, fuzzy);
+      if (s > 0) scored.push({ exam, s });
     }
     if (scored.length) {
       scored.sort((a, b) => b.s - a.s || a.exam.n - b.exam.n);
-      const via = new Map();
-      for (const row of scored) if (row.via) via.set(row.exam.n, row.via);
-      return { results: scored.map((row) => row.exam), fuzzy, via };
+      return { results: scored.map((row) => row.exam), fuzzy };
     }
   }
 
-  return { results: [], fuzzy: true, via: new Map() };
+  return { results: [], fuzzy: true };
 }
 
 /**

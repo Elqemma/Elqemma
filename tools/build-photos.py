@@ -43,11 +43,12 @@ What it makes
    structured data and the share card point at: Google asks that images used in
    structured data carry no text, and this one carries none.
 
-4. teacher-award-*.webp   (4:5)
+4. teacher-award-*.webp   (5:7)
    Source: data/source/photos/teacher-award.jpg — a phone screenshot of him
    being handed a certificate at an event. The chat chrome above and below the
-   photo is cropped away, then the photo is lightly sharpened and given a touch
-   more contrast. It is the one documentary photograph on the site, which is
+   photo is cropped away, and so is the man handing the certificate over, hand
+   included; then the photo is lightly sharpened and given a touch more
+   contrast. It is the one documentary photograph on the site, which is
    why it is kept as it is rather than restaged.
 
 5. proof/chat-*.webp   (the students' WhatsApp messages)
@@ -70,8 +71,12 @@ SRC = ROOT / "data" / "source"
 OUT = ROOT / "assets" / "img"
 PROOF = OUT / "proof"
 
-# Crop, in original pixels, measured once on the award screenshot.
-AWARD_CONTENT = (0, 158, 579, 1172)  # between the chat header and the reply bar
+# The window published from the award screenshot, in original pixels, measured
+# once. The photo itself runs from the chat header (ends at y 158) to the reply
+# bar (starts at y 1172). The man handing the certificate over stands from
+# x 457 and his hand reaches the certificate's corner at y 800; he is not to
+# appear (asked 2026-09-24), so the window stops short of both.
+AWARD_WINDOW = (0, 162, 450, 792)
 
 # The chat screenshots: (output name, source, crop box or None, has orange marker)
 # Boxes are in source pixels and keep only the conversation area.
@@ -267,13 +272,10 @@ def build_teacher():
 
 def build_award():
     print("award")
-    img = Image.open(SRC / "photos" / "teacher-award.jpg").convert("RGB").crop(AWARD_CONTENT)
-    # 4:5, high in the frame: a 4:3 window cannot hold both his face and the
-    # certificate at this width, and a crop that keeps only the certificate
-    # would not read as him receiving it.
-    want_h = round(img.width * 5 / 4)
-    y0 = 60
-    img = img.crop((0, y0, img.width, min(img.height, y0 + want_h)))
+    # 5:7. Within the limits AWARD_WINDOW explains, that is the shape that
+    # keeps headroom above him and the certificate's heading in frame; at 4:5
+    # the certificate sank under the card's caption.
+    img = Image.open(SRC / "photos" / "teacher-award.jpg").convert("RGB").crop(AWARD_WINDOW)
     img = img.resize((img.width * 2, img.height * 2), Image.LANCZOS)
     img = img.filter(ImageFilter.UnsharpMask(radius=1.4, percent=60, threshold=2))
     img = ImageEnhance.Contrast(img).enhance(1.05)

@@ -294,6 +294,64 @@ for (const page of PAGES) {
   );
 }
 
+// The teacher asked (2026-09-24) that nothing call the forms free. This reads
+// the raw files, not the visible text: a meta description, a JSON-LD flag, the
+// manifest and the share card say it to more people than the page does.
+const FREE = /مجّ?ان|isAccessibleForFree/;
+for (const file of [...ALL_HTML, 'llms.txt', 'site.webmanifest', 'tools/og-cover.template.html']) {
+  const hit = FREE.exec(read(file));
+  check(`${file}: does not call the forms free`, !hit, hit ? `found: "${hit[0]}"` : '');
+}
+
+// And every page closes on his rights.
+for (const page of PAGES) {
+  const footer = /<footer class="site-footer">[\s\S]*?<\/footer>/.exec(html[page])?.[0] ?? '';
+  check(`${page}: the footer reserves his rights`, /جميع الحقوق محفوظة/.test(footer));
+}
+check('llms.txt reserves his rights', /جميع الحقوق محفوظة/.test(read('llms.txt')));
+
+// The compilation «الأكثر تكرارًا» is matched against is never named, anywhere:
+// the deploy publishes this whole folder, so a README line or a code comment is
+// as public as the page. The teacher asked (2026-09-24). The pattern avoids
+// «شجرة الزيتون», which is a real section's title. This file is skipped because
+// it has to spell the pattern out.
+const SOURCE_NAME = /زيتونة|زيتونه|zaytoun|zaitoun|zaytun|العراب/i;
+const TEXT_FILE = /\.(html|css|js|mjs|py|json|md|txt|xml|yml|yaml|webmanifest)$/;
+const tracked = [];
+(function walk(dir) {
+  for (const entry of fs.readdirSync(path.join(ROOT, dir), { withFileTypes: true })) {
+    const rel = dir ? `${dir}/${entry.name}` : entry.name;
+    if (entry.isDirectory()) {
+      if (entry.name !== 'node_modules' && entry.name !== '.git') walk(rel);
+    } else if (TEXT_FILE.test(entry.name) && rel !== 'tools/test-seo.mjs') {
+      tracked.push(rel);
+    }
+  }
+})('');
+const naming = tracked.filter((file) => SOURCE_NAME.test(read(file)));
+check('no file names the source of «الأكثر تكرارًا»', naming.length === 0, naming.join(', '));
+
+// «الأكثر تكرارًا» itself is hidden unless the teacher switches it on from the
+// console, and hidden includes what a crawler reads in the source: no page and
+// no llms.txt carries a word of it, shown or not. Its copy lives in
+// assets/data/shortlist.json and reaches a page only while features.json says so.
+const SHORTLIST_WORDS = /الأكثر\s+تكرار|تكرّر\s+ورودها|الشارة\s+الذهبية/;
+for (const file of [...ALL_HTML, 'llms.txt']) {
+  const hit = SHORTLIST_WORDS.exec(read(file));
+  check(`${file}: carries no word of the hidden shortlist`, !hit, hit ? `found: "${hit[0]}"` : '');
+}
+
+// The sections are numbered once, as they are today. No page, no script and no
+// llms.txt tells a student what a section used to be numbered.
+const OLD_NUMBERING = /ترقيم\s+(ال)?قديم|الترقيم\s+القديم|(ال)?رقم\s+(ال)?قديم|كان\s+(ال)?قسم|(ال)?قسم\s+(ال)?قديم|محو[ّ]?ل\s+(ال)?ترقيم|الترقيمين/;
+const PAGE_SCRIPTS = fs.readdirSync(path.join(ROOT, 'assets', 'js'))
+  .filter((name) => name.endsWith('.js'))
+  .map((name) => `assets/js/${name}`);
+for (const file of [...ALL_HTML, 'llms.txt', ...PAGE_SCRIPTS]) {
+  const hit = OLD_NUMBERING.exec(read(file));
+  check(`${file}: never mentions an old section number`, !hit, hit ? `found: "${hit[0]}"` : '');
+}
+
 /* -------------------------------------------------------------------------- */
 /* Accessibility and safety details that only show up in the markup            */
 /* -------------------------------------------------------------------------- */
@@ -400,7 +458,7 @@ check('404.html resolves those links for a project page',
 group('generated files');
 
 const llms = read('llms.txt');
-const { total, totalQuestions, questionsMin, questionsMax, sectionMap } = data.meta;
+const { total, totalQuestions, questionsMin, questionsMax } = data.meta;
 
 check('llms.txt exists and is not empty', llms.trim().length > 0);
 check('llms.txt leads with his name', /^#\s*الأستاذ عبد الرحمن سيد منصور/m.test(llms));
@@ -440,7 +498,6 @@ const STAMPS = {
   questions: ar.format(totalQuestions),
   qmin: ar.format(questionsMin),
   qmax: ar.format(questionsMax),
-  mapped: ar.format(sectionMap.mapped),
 };
 for (const page of PAGES) {
   for (const [key, value] of Object.entries(STAMPS)) {

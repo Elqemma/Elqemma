@@ -21,6 +21,11 @@
  * anywhere. The one thing this page does persist is the GitHub publishing
  * settings, and only because retyping a token every day would guarantee it ends
  * up written on something.
+ *
+ * Its second job is the one switch students can see the effect of:
+ * assets/data/features.json, which decides whether «الأكثر تكرارًا» exists on
+ * the site at all (see assets/js/shortlist.js). It ships off; this page is how
+ * it is turned on and back off, through the same GitHub commit.
  */
 
 import {
@@ -33,6 +38,8 @@ import {
 } from './lock-crypto.js';
 
 const LOCK_PATH = 'assets/data/unlock.json';
+const FEATURES_PATH = 'assets/data/features.json';
+const SHORTLIST_PATH = 'assets/data/shortlist.json';
 const GH_KEY = 'qimma.admin.github';
 const PHONE = '966507008364';
 
@@ -65,6 +72,16 @@ const el = {
   publishPanel: $('publishPanel'),
   downloadBtn: $('downloadBtn'),
   ghBtn: $('ghBtn'),
+  publishSay: $('publishSay'),
+
+  featurePanel: $('featurePanel'),
+  featureState: $('featureState'),
+  featureCount: $('featureCount'),
+  featureBtn: $('featureBtn'),
+  featureSay: $('featureSay'),
+
+  ghPanel: $('ghPanel'),
+  ghDetails: $('ghDetails'),
   ghSetup: $('ghSetup'),
   ghOwner: $('ghOwner'),
   ghRepo: $('ghRepo'),
@@ -73,7 +90,7 @@ const el = {
   ghSaveBtn: $('ghSaveBtn'),
   ghSaveCfgBtn: $('ghSaveCfgBtn'),
   ghForgetBtn: $('ghForgetBtn'),
-  publishSay: $('publishSay'),
+  ghSay: $('ghSay'),
 
   morePanel: $('morePanel'),
   adminChangeForm: $('adminChangeForm'),
@@ -178,8 +195,11 @@ function showConsole() {
   el.signInPanel.hidden = true;
   el.statusPanel.hidden = false;
   el.changePanel.hidden = false;
+  el.featurePanel.hidden = false;
+  el.ghPanel.hidden = false;
   el.morePanel.hidden = false;
   renderStatus();
+  loadFeatures();
 }
 
 /* -------------------------------------------------------------------------- */
@@ -466,29 +486,49 @@ function loadGh() {
   el.ghToken.value = saved.token || '';
 }
 
+/** Whichever publish asked for a token, to run again once one is saved. */
+let afterToken = null;
+
+/** Open the one-time setup, and remember what to finish when it is done. */
+function requestToken(then) {
+  afterToken = then;
+  el.ghDetails.open = true;
+  el.ghSetup.hidden = false;
+  say(el.ghSay, 'note', 'أول مرة فقط: الصفحة تحتاج توكن من GitHub لتنشر بدلًا عنك. الخطوات بالأعلى.');
+  el.ghPanel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  el.ghToken.focus({ preventScroll: true });
+}
+
+function requestRepo() {
+  el.ghDetails.open = true;
+  say(el.ghSay, 'wrong', 'تعذّر اكتشاف المستودع من عنوان الموقع. اكتب المالك والمستودع هنا ثم احفظ.');
+  el.ghPanel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
 el.ghSaveCfgBtn.addEventListener('click', () => {
   const ok = writeGh({
     owner: el.ghOwner.value.trim(),
     repo: el.ghRepo.value.trim(),
     branch: el.ghBranch.value.trim(),
   });
-  say(el.publishSay, ok ? 'ok' : 'wrong', ok ? 'حُفظت الحقول في هذا المتصفح.' : 'تعذّر الحفظ — المتصفح يمنع التخزين.');
+  say(el.ghSay, ok ? 'ok' : 'wrong', ok ? 'حُفظت الحقول في هذا المتصفح.' : 'تعذّر الحفظ — المتصفح يمنع التخزين.');
 });
 
 el.ghSaveBtn.addEventListener('click', () => {
   const token = el.ghToken.value.trim();
-  if (!token) return say(el.publishSay, 'wrong', 'الصق التوكن أولًا.');
-  if (!writeGh({ token })) {
-    say(el.publishSay, 'warn', 'المتصفح يمنع الحفظ، فسيُستخدم التوكن لهذه المرة فقط.');
-  }
+  if (!token) return say(el.ghSay, 'wrong', 'الصق التوكن أولًا.');
+  if (writeGh({ token })) say(el.ghSay, 'ok', 'حُفظ التوكن في هذا المتصفح.');
+  else say(el.ghSay, 'warn', 'المتصفح يمنع الحفظ، فسيُستخدم التوكن لهذه المرة فقط.');
   el.ghSetup.hidden = true;
-  publish();
+  const next = afterToken;
+  afterToken = null;
+  next?.();
 });
 
 el.ghForgetBtn.addEventListener('click', () => {
   writeGh({ token: '' });
   el.ghToken.value = '';
-  say(el.publishSay, 'ok', 'مُسح التوكن من هذا المتصفح.');
+  say(el.ghSay, 'ok', 'مُسح التوكن من هذا المتصفح.');
 });
 
 /* ---- GitHub ---------------------------------------------------------------- */
@@ -536,7 +576,8 @@ async function ghJson(url, init, what) {
   throw error;
 }
 
-async function ghCommit(cfg, text) {
+/** Commit one file — the lock or the switch — as a single change on GitHub. */
+async function ghCommit(cfg, { path, text, message }) {
   const headers = ghHeaders(cfg.token);
 
   // One call that checks the token, the repository and the branch together,
@@ -545,9 +586,9 @@ async function ghCommit(cfg, text) {
   const branch = cfg.branch || repo.default_branch;
 
   // GitHub refuses a blind overwrite, which is exactly what we want: two people
-  // cannot silently clobber each other's password change. A 404 here just
-  // means the file does not exist yet on that branch.
-  const api = `${GH}/repos/${cfg.owner}/${cfg.repo}/contents/${LOCK_PATH}`;
+  // cannot silently clobber each other's change. A 404 here just means the
+  // file does not exist yet on that branch.
+  const api = `${GH}/repos/${cfg.owner}/${cfg.repo}/contents/${path}`;
   let sha;
   try {
     ({ sha } = await ghJson(`${api}?ref=${encodeURIComponent(branch)}`, { headers }, 'الملف'));
@@ -561,7 +602,7 @@ async function ghCommit(cfg, text) {
       method: 'PUT',
       headers: { ...headers, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        message: 'تغيير كلمة مرور فتح النماذج',
+        message,
         content: utf8ToBase64(text),
         branch,
         ...(sha ? { sha } : {}),
@@ -575,21 +616,20 @@ async function ghCommit(cfg, text) {
 
 /**
  * Pages redeploys after the commit, usually within a minute or two. Poll the
- * live file — this page is served from the same place, so the fetch below hits
- * the real site — until it carries the version that was just sent.
+ * live site — this page is served from the same place, so a fetch hits the
+ * real thing — until `isLive` sees what was just sent. `node` hears how long.
  */
-async function waitForLive(version, { every = 12000, upTo = 6 * 60 * 1000 } = {}) {
+async function waitForLive(isLive, node, { every = 12000, upTo = 6 * 60 * 1000 } = {}) {
   const t0 = Date.now();
   while (Date.now() - t0 < upTo) {
     await new Promise((r) => setTimeout(r, every));
     try {
-      const file = await fetchLockFile();
-      if (file.v === version) return true;
+      if (await isLive()) return true;
     } catch {
       /* mid-deploy; keep waiting */
     }
     const seconds = Math.round((Date.now() - t0) / 1000);
-    say(el.publishSay, 'note', `تم الرفع إلى GitHub. جارٍ انتظار تحديث الموقع… (${seconds} ثانية)`);
+    say(node, 'note', `تم الرفع إلى GitHub. جارٍ انتظار تحديث الموقع… (${seconds} ثانية)`);
   }
   return false;
 }
@@ -601,23 +641,17 @@ async function publish() {
   const cfg = ghConfig();
 
   if (!cfg.token) {
-    el.ghSetup.hidden = false;
-    el.ghToken.focus();
-    say(el.publishSay, 'note', 'أول مرة فقط: الصفحة تحتاج توكن من GitHub لتنشر بدلًا عنك. الخطوات بالأسفل.');
-    return;
+    say(el.publishSay, 'note', 'النشر يحتاج إذنًا من GitHub مرة واحدة — أكمله في «إعدادات النشر على GitHub».');
+    return requestToken(publish);
   }
-  if (!cfg.owner || !cfg.repo) {
-    document.querySelector('#publishPanel details').open = true;
-    say(el.publishSay, 'wrong', 'تعذّر اكتشاف المستودع من عنوان الموقع. اكتب المالك والمستودع في الإعدادات المتقدمة ثم احفظ.');
-    return;
-  }
+  if (!cfg.owner || !cfg.repo) return requestRepo();
 
   busy(el.ghBtn, true, 'جارٍ النشر…');
   say(el.publishSay, 'note', 'جارٍ الاتصال بـ GitHub…');
   try {
     const text = `${JSON.stringify(pending.file)}\n`;
     const version = pending.file.v;
-    await ghCommit(cfg, text);
+    await ghCommit(cfg, { path: LOCK_PATH, text, message: 'تغيير كلمة مرور فتح النماذج' });
 
     // From here the file is on GitHub. What the console describes as current
     // is what it just sent; what remains is Pages catching up.
@@ -631,7 +665,7 @@ async function publish() {
     renderStatus();
 
     say(el.publishSay, 'note', 'تم الرفع إلى GitHub. جارٍ انتظار تحديث الموقع… (عادةً دقيقة أو دقيقتان)');
-    const live = await waitForLive(version);
+    const live = await waitForLive(async () => (await fetchLockFile()).v === version, el.publishSay);
     if (live) {
       el.publishPanel.hidden = true;
       say(
@@ -648,15 +682,139 @@ async function publish() {
       );
     }
   } catch (error) {
-    if (error.status === 401) el.ghSetup.hidden = false;
+    if (error.status === 401) requestToken(publish);
     say(el.publishSay, 'wrong', `${error.message}
-يمكنك دائمًا التنزيل والرفع اليدوي من الإعدادات المتقدمة.`);
+يمكنك دائمًا التنزيل والرفع اليدوي من «طريقة يدوية».`);
   } finally {
     busy(el.ghBtn, false);
   }
 }
 
 el.ghBtn.addEventListener('click', publish);
+
+/* -------------------------------------------------------------------------- */
+/* «الأكثر تكرارًا» — the switch                                               */
+/*                                                                             */
+/* Off by default. What this panel reports is what the live site serves, read */
+/* fresh, not what was last clicked here: another tab, or a hand edit on      */
+/* GitHub, may have changed it since.                                          */
+/* -------------------------------------------------------------------------- */
+
+/** What the live site serves now. Absent means off, like the site reads it. */
+let features = null;
+
+async function fetchLive(pathname) {
+  const url = new URL(pathname, location.href);
+  url.searchParams.set('t', String(Date.now()));
+  return fetch(url, { cache: 'no-store' });
+}
+
+async function fetchFeatures() {
+  const response = await fetchLive(FEATURES_PATH);
+  if (response.status === 404) return { shortlist: false, updated: null };
+  if (!response.ok) throw new Error(`تعذّر قراءة إعدادات الموقع (HTTP ${response.status}).`);
+  const file = await response.json();
+  return { ...file, shortlist: file?.shortlist === true };
+}
+
+/** How many sections the published list holds; 0 when there is none to show. */
+async function fetchListSize() {
+  try {
+    const response = await fetchLive(SHORTLIST_PATH);
+    if (!response.ok) return 0;
+    const list = await response.json();
+    return Array.isArray(list?.sections) ? list.sections.length : 0;
+  } catch {
+    return 0;
+  }
+}
+
+let listSize = 0;
+
+function renderFeatures() {
+  const on = features?.shortlist === true;
+  el.featureState.textContent = on ? 'ظاهرة للطلاب' : 'مخفية عن الطلاب';
+  el.featureCount.textContent = listSize ? String(listSize) : 'لا توجد قائمة منشورة';
+  el.featureBtn.className = `btn ${on ? 'btn--secondary' : 'btn--primary'}`;
+  el.featureBtn.querySelector('span').textContent = on ? 'أخفِها عن الطلاب' : 'أظهرها للطلاب';
+  // Hiding is always possible; showing needs a list to show.
+  el.featureBtn.disabled = !on && !listSize;
+}
+
+async function loadFeatures() {
+  el.featureBtn.disabled = true;
+  say(el.featureSay, 'note', 'جارٍ قراءة الحالة من الموقع…');
+  try {
+    [features, listSize] = await Promise.all([fetchFeatures(), fetchListSize()]);
+    renderFeatures();
+    say(
+      el.featureSay,
+      listSize || features.shortlist ? null : 'warn',
+      listSize || features.shortlist
+        ? ''
+        : 'لا توجد قائمة «الأكثر تكرارًا» منشورة على الموقع، فلا شيء يمكن إظهاره الآن.',
+    );
+  } catch (error) {
+    say(el.featureSay, 'wrong', error.message);
+  }
+}
+
+async function toggleShortlist() {
+  if (!features) return loadFeatures();
+  const next = !features.shortlist;
+  const cfg = ghConfig();
+
+  if (!cfg.token) {
+    say(el.featureSay, 'note', 'النشر يحتاج إذنًا من GitHub مرة واحدة — أكمله في «إعدادات النشر على GitHub».');
+    return requestToken(toggleShortlist);
+  }
+  if (!cfg.owner || !cfg.repo) return requestRepo();
+
+  const sure = window.confirm(
+    next
+      ? 'ستظهر «الأكثر تكرارًا» لكل الطلاب خلال دقيقة أو دقيقتين: الشارة والفلتر وزرّها وشرحها. متابعة؟'
+      : 'ستختفي «الأكثر تكرارًا» وكل ما يخصّها عن كل الطلاب خلال دقيقة أو دقيقتين. متابعة؟',
+  );
+  if (!sure) return;
+
+  const file = { ...features, shortlist: next, updated: new Date().toISOString() };
+  busy(el.featureBtn, true, next ? 'جارٍ الإظهار…' : 'جارٍ الإخفاء…');
+  say(el.featureSay, 'note', 'جارٍ الاتصال بـ GitHub…');
+  try {
+    await ghCommit(cfg, {
+      path: FEATURES_PATH,
+      text: `${JSON.stringify(file, null, 2)}\n`,
+      message: next ? 'إظهار «الأكثر تكرارًا» للطلاب' : 'إخفاء «الأكثر تكرارًا» عن الطلاب',
+    });
+    features = file;
+
+    say(el.featureSay, 'note', 'تم الرفع إلى GitHub. جارٍ انتظار تحديث الموقع… (عادةً دقيقة أو دقيقتان)');
+    const live = await waitForLive(async () => (await fetchFeatures()).updated === file.updated, el.featureSay);
+    if (live) {
+      say(
+        el.featureSay,
+        'ok',
+        next
+          ? 'ظاهرة الآن للطلاب: الشارة والفلتر وزرّ الوصول السريع وشرحها في «عن المنصة».'
+          : 'مخفية الآن عن الطلاب، ومعها كل ما يخصّها.',
+      );
+    } else {
+      say(
+        el.featureSay,
+        'warn',
+        'الملف على GitHub لكن الموقع لم يتحدّث بعد. غالبًا يكفي الانتظار قليلًا؛ وإن طال، راجع تبويب Actions في المستودع.',
+      );
+    }
+  } catch (error) {
+    if (error.status === 401) requestToken(toggleShortlist);
+    say(el.featureSay, 'wrong', error.message);
+  } finally {
+    busy(el.featureBtn, false);
+    renderFeatures();
+  }
+}
+
+el.featureBtn.addEventListener('click', toggleShortlist);
 
 /* -------------------------------------------------------------------------- */
 /* Backup and sign out                                                         */
@@ -674,9 +832,12 @@ el.exportLinksBtn.addEventListener('click', () => {
 el.signOutBtn.addEventListener('click', () => {
   session = null;
   pending = null;
+  features = null;
   el.statusPanel.hidden = true;
   el.changePanel.hidden = true;
   el.publishPanel.hidden = true;
+  el.featurePanel.hidden = true;
+  el.ghPanel.hidden = true;
   el.morePanel.hidden = true;
   el.signInPanel.hidden = false;
   el.changeForm.reset();

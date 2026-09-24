@@ -147,7 +147,27 @@ function initLightbox() {
   });
 }
 
+/**
+ * The about page explains «الأكثر تكرارًا» only while the teacher has it
+ * switched on. The page ships an empty marker; the module and its two small
+ * files are fetched on that page alone, and with the switch off nothing is
+ * added.
+ */
+function initShortlistAbout() {
+  const marker = document.getElementById('shortlistAbout');
+  if (!marker) return;
+  import('./shortlist.js')
+    .then(async ({ loadShortlist, renderAbout }) => {
+      const shortlist = await loadShortlist();
+      if (shortlist) renderAbout(marker, shortlist);
+    })
+    .catch(() => {
+      /* off is the safe answer to any failure */
+    });
+}
+
 initTheme();
 initNav();
 initReveal();
 initLightbox();
+initShortlistAbout();
