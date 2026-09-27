@@ -3819,6 +3819,24 @@ a.tile:not([href]) {
   box-shadow: var(--shadow-3);
 }
 
+/* The student's original screenshot, shown as is; a click opens it full size. */
+.chat__shot {
+  display: block;
+  width: 100%;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--surface-2);
+  cursor: zoom-in;
+}
+
+.chat__shot img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
 .chat__thread {
   display: grid;
   gap: var(--sp-2);

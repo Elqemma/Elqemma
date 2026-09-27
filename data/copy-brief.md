@@ -454,18 +454,18 @@ single student's own message with the original screenshot behind it — the hous
 
 - eyebrow — `من رسائل الطلاب`
 - h2 — `ماذا قال طلابه بعد النتيجة؟`
-- lead — `لقطات حقيقية من محادثاتهم مع الأستاذ على واتساب بعد ظهور نتائج القدرات، حُجبت فيها الأسماء حفاظًا على الخصوصية. النص منقول من الرسائل، واللقطة الأصلية بضغطة واحدة.`
+- lead — `لقطات حقيقية من محادثاتهم مع الأستاذ على واتساب بعد ظهور نتائج القدرات، حُجبت فيها الأسماء حفاظًا على الخصوصية. اضغط على أي لقطة لتكبيرها.`
 - scores strip (three tiles, figures as written on the cards) —
   `99` · `الدرجة الكلية في القدرات (محوسب)` /
   `98` · `الدرجة الكلية · اللفظي 100` /
   `96٪` · `نتيجة اختبار القدرات`
 - closing note (both pages) — `الرسائل من طلاب سبق أن درسوا معه، ونتيجة كل طالب تخصّه وحده ولا تُقاس عليها.`
 - teaser buttons (index only) — `كل رسائل الطلاب` → `teacher.html#testimonials`, `صفحة الأستاذ`
-- proof button on every card — `اللقطة الأصلية`; lightbox title — `اللقطة الأصلية — …`
+- every card shows the original screenshot itself (click to enlarge); lightbox title — `اللقطة الأصلية — …`
 
 ### 7.2 The photo cards
 
-- hero — `99` / `درجة أحد طلابه في القدرات` / `اطّلع على درجات طلابه باللفظي` → `#testimonials`
+- hero — `اطّلع على درجات طلابه باللفظي` → `#testimonials`
 - home teacher band — `98` / `الدرجة الكلية لأحد طلابه` / `و100 في القسم اللفظي` → `#testimonials`
 - profile page, the small print tucked over the corner of the big photo —
   `أثناء التكريم` (alt: `الأستاذ عبد الرحمن سيد منصور يتسلّم شهادة شكر وتقدير`). It names the
