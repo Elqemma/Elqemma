@@ -457,7 +457,7 @@ single student's own message with the original screenshot behind it — the hous
 - lead — `لقطات حقيقية من محادثاتهم مع الأستاذ على واتساب بعد ظهور نتائج القدرات، حُجبت فيها الأسماء حفاظًا على الخصوصية. اضغط على أي لقطة لتكبيرها.`
 - scores strip (three tiles, figures as written on the cards) —
   `99` · `الدرجة الكلية في القدرات (محوسب)` /
-  `98` · `الدرجة الكلية · اللفظي 100` /
+  `100` · `درجة القسم اللفظي` /
   `96٪` · `نتيجة اختبار القدرات`
 - closing note (both pages) — `الرسائل من طلاب سبق أن درسوا معه، ونتيجة كل طالب تخصّه وحده ولا تُقاس عليها.`
 - teaser buttons (index only) — `كل رسائل الطلاب` → `teacher.html#testimonials`, `صفحة الأستاذ`
@@ -466,7 +466,7 @@ single student's own message with the original screenshot behind it — the hous
 ### 7.2 The photo cards
 
 - hero — `اطّلع على درجات طلابه باللفظي` → `#testimonials`
-- home teacher band — `98` / `الدرجة الكلية لأحد طلابه` / `و100 في القسم اللفظي` → `#testimonials`
+- home teacher band — `100` / `درجة أحد طلابه` / `في القسم اللفظي` → `#testimonials`
 - profile page, the small print tucked over the corner of the big photo —
   `أثناء التكريم` (alt: `الأستاذ عبد الرحمن سيد منصور يتسلّم شهادة شكر وتقدير`). It names the
   moment rather than the certificate, because the photograph behind it shows one as well.
@@ -477,7 +477,8 @@ single student's own message with the original screenshot behind it — the hous
    المجهود اللي بذلته معايا 🥰🥰 الحمد لله التأسيس كان ممتاز ودا بان في الاختبار.» + result card
    (1444/05/18 هـ — 2022/12/12، الدرجة الكلية 99). Teacher: «وعليكم السلام ورحمة الله وبركاته،
    ما شاء الله تبارك الله، مبارك يا دكتور ❤️»
-2. **chat-6 — الدرجة الكلية 98، اللفظي 100.** Student: «إزيك يا أستاذ عبد الرحمن، أخبار حضرتك؟»
+2. **chat-6 — القسم اللفظي 100.** The site quotes only his verbal score; the total (98) stays
+   visible in the screenshot but is not repeated in the copy (teacher's request, 2026-09-29). Student: «إزيك يا أستاذ عبد الرحمن، أخبار حضرتك؟»
    + result card (1444/06/23 هـ — 2023/01/16، الدرجة الكلية 98). Teacher: «ما شاء الله تبارك
    الله، مبارك عليك يا حبيبي» — «الله يبارك في حضرتك» — «إن شاء الله المحاولة الجاية تقفل. كم
    جبت في اللفظي؟» — «100» — «ما شاء الله، أسعدتني جدًا والله»
