@@ -141,69 +141,78 @@ The shortlist is a checkable claim, so it is computed rather than typed in. Its 
 the teacher's: «زبدة الأقسام» since 2026-09-24 (it was «الأكثر تكرارًا» before). The name
 is `label` in `data/source/priority.json` — the site, the about page's section and the
 console all read it from there through `assets/data/shortlist.json`, so a rename is that
-one line and `npm run build:data`, plus the default in `derive-priority.py`.
-`tools/derive-priority.py` produces `data/source/priority.json`; **134 sections** are
-flagged in the current build.
+one line and `npm run build:data`. `short` (default «الزبدة») is the word a card puts
+before its place on the list.
+
+**It is a ranked list, and the site keeps its order** (since 2026-10-11). A reference
+compilation numbers the sections that recur most from 1 to the end, most recurring first;
+`priority.json` holds them in that order, and the site shows them that way:
+
+- Shown alone (the toolbar switch, the tile, `?key=1`), the cards run 1, 2, 3 … to the end
+  of the list, each headed «الزبدة N» with the list's own name for it, and a pill with the
+  section's number among the 301 («القسم 121») as the way back to it in the full list. The
+  range chips, the «حسب الرقم» sort and the count line all follow that numbering.
+- In the full list nothing moves: a listed card keeps «القسم N», its own title and the
+  badge. Turning the switch on or off clears a range chip, because the numbers it ranged
+  over change meaning.
+- The list re-pairs passages, so it often files the same questions under another title
+  («الرشاشات وعمالة الأطفال» is القسم 30, «التدرج والتغيير في خصائص المجتمعات»). Those
+  names are published and searchable in both views; a name that differs only by a space or a
+  letter or two is treated as the same, and the site's spelling stands.
+
+Today: **138 places, 132 of them sections on the site, 6 with no form yet** — 133 المناخ,
+134 الرؤيا والبحر الميت, 135 الغواصة الروسية والازدواجية, 136 الالوان, 137 العصافير,
+138 القمر. Those six keep their places as dashed «قريبًا» cards («النموذج قيد الإعداد»)
+that nothing on can be pressed; they appear only with the shortlist shown alone, under
+«الكل», and they count towards the list (138) but not towards progress, which counts what
+can be opened (132).
+
+**Giving a waiting place its form.** Add the form to `data/source/forms.json` as the next
+export section (302, 303 …), write that number as `n` on its entry in `priority.json`, and
+run `npm run build:data`, `npm run build:lock -- …` and `npm run verify`. Re-running
+`derive-priority.py` will not find it among the 301 and would write the placeholder back, so
+note the hand edit in `_note`.
 
 **Where the claim comes from.** Not from either teacher's opinion: from a separate
-reference compilation that collects the passages that recur most in the real exam.
+reference compilation that ranks the passages that recur most in the real exam.
 **It is never named** — not on the site, not in `llms.txt`, not in the data or in this
 repository, which is published with the site. The teacher asked for that (2026-09-24), and
-`tools/test-seo.mjs` fails if the name comes back anywhere in the tree. This site and الأستاذ أحمد طلعت's site index
-the *same* 301-section compilation — 300 of the 301 topics are identical, the odd one out
-being a spelling variant of المدرسة المونتيسورية — so "which of the 301 recur most" is a
-property of the content, and the answer is the same for both sites.
+`tools/test-seo.mjs` fails if the name comes back anywhere in the tree.
 
-**How the match is made.** Not on section titles. The two compilations pair their passages
-differently — the reference compilation joins passages that the 301 file keeps in separate
-sections — so titles disagree even where the content is identical. Matching on titles
-produced obvious nonsense («العصافير» → «الدعاء» at 0.57 similarity).
+**How the match is made.** Not on section titles — see above: the same questions often
+carry another name there. The questions themselves are the stable unit. The script strips
+question numbers and option letters (the two files mark them differently), fingerprints
+every six-word window of what is left, discards windows that appear in more than two of the
+301 sections (boilerplate such as «اختر المفردة الشاذة»), and asks which of the 301 each
+entry of the list *is*.
 
-The questions themselves are the stable unit. So the script fingerprints every six-word
-window of each section's text, discards windows that appear in more than two of the 301
-sections (boilerplate such as «اختر المفردة الشاذة»), and asks which of the 301 sections
-the reference text came from.
-
-The evidence comes out cleanly bimodal, which is what a real correspondence looks like and
-a coincidence does not:
-
-| share of a reference section's distinctive text found in a 301 section | sections |
-| --- | --- |
-| 0.9 – 1.0 | **125** |
-| 0.1 – 0.8 | 17 |
-| none at all | 159 |
-
-The cut (`MIN_SHARE = 0.30`, `MIN_WINDOWS = 20`) sits in the empty middle, so it is not
-delicate. The script refuses to write a list far from the size of the reference compilation.
+"Is" has to hold both ways: at least 80% of the entry's distinctive text in that section
+(`MIN_SHARE_OF_ENTRY`) and at least 50% of the section's in the entry
+(`MIN_SHARE_OF_SECTION`), over at least 20 windows. One way is not enough: place 135 joins two
+passages that the 301 keep in separate sections (#66 and #164 on this site), so it is found
+inside both and is neither. The evidence is cleanly bimodal — every matched entry shares
+99%+ one way and 88%+ the other; every unmatched one falls far short on a side — so the cut
+is not delicate. The script refuses to write if the ranks do not run 1, 2, 3 … without a
+gap, or if two entries claim the same section.
 
 ```bash
-python tools/derive-priority.py            # report only
+python tools/derive-priority.py            # report only (lists the places with no form)
 python tools/derive-priority.py --write    # update priority.json
 npm run build:data                         # then rebuild
 ```
 
 The two source `.docx` files are **not in this repository**. `QIMMA_SOURCES` (or `BASE` in
 the script) points at the folder holding the 301 compilation; `QIMMA_PRIORITY_DOCX` must
-point at the reference compilation itself, and has no default, because its file name would
-name it. The derived list is committed, so the script only needs to run when one of those
-documents changes.
+point at the ranked compilation itself, and has no default, because its file name would
+name it. A re-run keeps `label`, `short` and `blurb` as they are in `priority.json`. The
+derived list is committed, so the script only needs to run when one of those documents
+changes.
 
-**How this differs from the list on الأستاذ أحمد's site.** His ships 140 sections; the two
-agree on 126.
-
-- **8 sections he lists have no shared text at all** with the reference compilation —
-  23, 49, 96, 116, 117, 143, 167, 260 — so nothing here supports flagging them.
-- **8 sections with overwhelming support are missing from his list** — 24, 50, 62, 130,
-  144, 158, 197, 261 — several at a 0.97–1.00 share over hundreds of windows.
-- His 122–254 band is the weak one: 6 listed, 1 supported. His 1–121 band is 91% supported
-  and his 255–301 band 97%.
-
-That is why this site ships the derived list rather than a copy of his.
-
-**Overriding it by hand.** If the teacher wants a different set, write the numbers straight
-into `sections` and run `npm run build:data`. Nothing enforces the derivation — but note
-the reason in `_note`, because the next person to run the script with `--write` will
-otherwise overwrite the edit.
+**Overriding it by hand.** If the teacher wants a different list, edit `sections` directly
+(in order; `{ "n": export number }` for a section, `{ "t": name, "q": questions }` for a place
+with no form) and run `npm run build:data`. Nothing enforces the derivation — but note the
+reason in `_note`, because the next person to run the script with `--write` will otherwise
+overwrite the edit.
 
 **Hidden unless the teacher shows it.** The shortlist ships switched off, and switching it
 is the teacher's call, made from `lock-admin.html` («زبدة الأقسام» → أظهرها /
@@ -234,7 +243,8 @@ This hides the feature from visitors, not the list from someone reading the repo
 `shortlist.json` is committed and served (nothing links to it while the switch is off), and
 the repository is public. Keeping the list itself private means a private repository.
 
-The build reports `priority.flagged` (how many the list holds) and `priority.unknown` (numbers on
+The build reports `priority.listed` (places on the list), `priority.flagged` (how many of them are
+sections on the site), `priority.waiting` (places with no form yet) and `priority.unknown` (numbers on
 the list that no published form answers to — dropped rather than failing the build, and
 printed during the build so a typo is visible immediately).
 

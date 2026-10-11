@@ -215,31 +215,76 @@ function loadOrder() {
   return { number, title, moved, present: number.size > 0, source: raw?.source || null };
 }
 
+/** Folded, spaces dropped, and at most two letters apart. */
+function sameName(a, b) {
+  const x = normalizeArabic(a).replace(/\s/g, '');
+  const y = normalizeArabic(b).replace(/\s/g, '');
+  if (Math.abs(x.length - y.length) > 2) return false;
+  let row = Array.from({ length: y.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= x.length; i += 1) {
+    const next = [i];
+    for (let j = 1; j <= y.length; j += 1) {
+      next[j] = Math.min(row[j] + 1, next[j - 1] + 1, row[j - 1] + (x[i - 1] === y[j - 1] ? 0 : 1));
+    }
+    row = next;
+  }
+  return row[y.length] <= 2;
+}
+
+/**
+ * The shortlist, in its own order: entry 1 first. An entry is a section of the
+ * export ({ n, t } — a bare number still works) or a section that has no form
+ * yet ({ t, q }), which keeps its place in the order and is shown as «قريبًا».
+ *
+ * The published entry carries the site's number, and the list's own name for
+ * the section only where it is a different name: the list re-pairs passages, so
+ * the same questions are often filed under another title there. A name that
+ * differs only by a space or a slip of a letter or two is the same name, and the
+ * site's own spelling stands.
+ */
 function loadPriority(published, order) {
   const raw = readJson(PRIORITY_FILE, 'the shortlist');
   if (!raw) return { value: null, unknown: [] };
-  const wanted = [...new Set((raw.sections || []).map(Number).filter(Number.isInteger))];
-  if (!wanted.length) return { value: null, unknown: [] };
-  const have = new Set(published.map((e) => e.n));
+  const byNumber = new Map(published.map((e) => [e.n, e]));
   // The list is derived against the export's numbering — tools/derive-priority.py
   // fingerprints the same compilation the export was cut from — so each number is
   // translated before it is looked up, and reported untranslated if it misses.
   const shown = (n) => order.number.get(n) ?? n;
-  const matched = wanted
-    .filter((n) => have.has(shown(n)))
-    .map(shown)
-    .sort((a, b) => a - b);
-  const unknown = wanted.filter((n) => !have.has(shown(n))).sort((a, b) => a - b);
-  if (!matched.length) return { value: null, unknown };
+  const entries = [];
+  const unknown = [];
+  const listed = new Set();
+  for (const row of raw.sections || []) {
+    const entry = typeof row === 'object' && row ? row : { n: row };
+    const name = String(entry.t ?? '').trim();
+    if (entry.n === undefined || entry.n === null) {
+      // No form yet: it keeps its place in the order, and says so.
+      const q = Number(entry.q);
+      if (name) entries.push({ t: name, ...(Number.isInteger(q) && q > 0 ? { q } : {}) });
+      continue;
+    }
+    const from = Number(entry.n);
+    const exam = Number.isInteger(from) ? byNumber.get(shown(from)) : null;
+    if (!exam) {
+      unknown.push(entry.n);
+      continue;
+    }
+    if (listed.has(exam.n)) continue;
+    listed.add(exam.n);
+    entries.push(name && !sameName(name, exam.t) ? { n: exam.n, t: name } : { n: exam.n });
+  }
+  const ready = entries.filter((e) => e.n !== undefined).length;
+  if (!ready) return { value: null, unknown };
   return {
     value: {
       label: String(raw.label || 'زبدة الأقسام').trim(),
+      short: String(raw.short || 'الزبدة').trim(),
       blurb: String(raw.blurb || '').trim(),
       updated: String(raw.updated || '').trim() || null,
-      count: matched.length,
-      sections: matched,
+      count: entries.length,
+      ready,
+      sections: entries,
     },
-    unknown,
+    unknown: unknown.sort((a, b) => a - b),
   };
 }
 
@@ -378,8 +423,8 @@ function build() {
     questionsRange: [meta.questionsMin, meta.questionsMax],
     order: order.present ? { source: order.source, renumbered: order.moved } : null,
     priority: priority
-      ? { label: priority.label, flagged: priority.count, unknown: priorityUnknown }
-      : { label: null, flagged: 0, unknown: priorityUnknown },
+      ? { label: priority.label, listed: priority.count, flagged: priority.ready, waiting: priority.count - priority.ready, unknown: priorityUnknown }
+      : { label: null, listed: 0, flagged: 0, waiting: 0, unknown: priorityUnknown },
   };
   fs.writeFileSync(REPORT_FILE, JSON.stringify(report, null, 2) + EOL, 'utf8');
 
@@ -399,7 +444,7 @@ function build() {
   else console.log('order       : none (section-order.json missing) — the export numbering stands');
   if (priority) {
     console.log(
-      `shortlist   : ${priority.count} sections -> assets/data/shortlist.json (shown only while features.json switches it on)`,
+      `shortlist   : ${priority.count} in order, ${priority.ready} on the site, ${priority.count - priority.ready} waiting for a form -> assets/data/shortlist.json (shown only while features.json switches it on)`,
     );
   } else console.log('shortlist   : none (priority.json missing or empty) — shortlist.json removed');
   if (priorityUnknown.length)
@@ -420,23 +465,34 @@ function build() {
  * holds no trace of it. No source list, no file: a switch left on then finds
  * nothing, and the feature stays off.
  */
+/** «6 أقسام منها لم تُضف نماذجها بعد…», agreeing with however many there are. */
+function waitingSentence(n) {
+  if (n === 1) return 'قسم واحد منها لم يُضف نموذجه بعد، ويظهر في مكانه من الترتيب بعلامة «قريبًا».';
+  if (n === 2) return 'قسمان منها لم يُضف نموذجاهما بعد، ويظهران في مكانهما من الترتيب بعلامة «قريبًا».';
+  return `${arabicNumber(n)} ${unitNoun(n, 'section')} منها لم تُضف نماذجها بعد، وتظهر في مكانها من الترتيب بعلامة «قريبًا».`;
+}
+
 function writeShortlist(priority, total) {
   if (!priority) {
     fs.rmSync(SHORTLIST_FILE, { force: true });
     return;
   }
-  const { label, blurb, updated, count, sections } = priority;
+  const { label, short, blurb, updated, count, ready, sections } = priority;
+  const waiting = count - ready;
   const shortlist = {
     label,
+    short,
     blurb,
     updated,
     count,
+    ready,
     sections,
     about: {
       heading: `«${label}» — ما هذه الشارة الذهبية؟`,
       paragraphs: [
         `بعض الأقسام عليها شارة «${label}»، ولها فلتر خاص وزرّ في الوصول السريع وشريط تقدّم مستقل. معناها أن نصوص هذا القسم يتكرّر ورودها أكثر من غيرها في التجميعات المتداولة بين الطلاب.`,
-        `هذه القائمة ليست رأيًا شخصيًا، وعددها اليوم ${arabicNumber(count)} ${unitNoun(count, 'section')} من ${arabicNumber(total)}.`,
+        `هذه القائمة ليست رأيًا شخصيًا، وعددها اليوم ${arabicNumber(count)} ${unitNoun(count, 'section')} مرقّمة من 1 إلى ${arabicNumber(count)}. حين تعرضها وحدها تظهر بهذا الترتيب، وعلى كل بطاقة رقمها فيها ورقم القسم بين الأقسام الـ${arabicNumber(total)}.`,
+        ...(waiting ? [waitingSentence(waiting)] : []),
       ],
       note: 'الشارة ترتيب أولويات لا ضمانة: إن كان وقتك ضيقًا ابدأ بها، وإن كان أمامك متّسع فالأقسام كلها مفيدة. لا أحد يعرف أسئلة الاختبار القادم.',
     },

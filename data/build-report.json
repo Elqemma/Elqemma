@@ -1,5 +1,5 @@
 {
-  "builtAt": "2026-09-29T09:30:26.349Z",
+  "builtAt": "2026-10-11T20:21:43.222Z",
   "source": "data/source/forms.json",
   "published": 301,
   "excluded": [],
@@ -14,7 +14,9 @@
   },
   "priority": {
     "label": "زبدة الأقسام",
-    "flagged": 134,
+    "listed": 138,
+    "flagged": 132,
+    "waiting": 6,
     "unknown": []
   }
 }

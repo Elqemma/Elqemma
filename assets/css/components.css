@@ -3286,6 +3286,32 @@ a.tile:not([href]) {
   opacity: 0.75;
 }
 
+/* A place on the shortlist with no form yet. It keeps its slot in the order
+   and looks unfinished on purpose: a dashed outline, no lift on hover, and a
+   button-shaped line that is plainly not a button. */
+.card--pending {
+  border-style: dashed;
+  border-color: var(--border-strong);
+  box-shadow: none;
+}
+
+.card--pending:hover {
+  border-color: var(--border-strong);
+  box-shadow: none;
+  transform: none;
+}
+
+.card__cta--pending {
+  background: var(--surface-sunken);
+  color: var(--ink-2);
+  border: 1px dashed var(--border-strong);
+  cursor: default;
+}
+
+.card__cta--pending:active {
+  transform: none;
+}
+
 /* --------------------------------------------------------------------------
    Progress tools — save / restore / clear
    -------------------------------------------------------------------------- */

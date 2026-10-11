@@ -164,6 +164,8 @@ if (fs.existsSync(SHORTLIST)) {
     fail(`shortlist.json is unreadable: ${error.message}`);
   }
   if (list) {
+    // In the list's own order: { n, t? } for a section on the site, { t, q? }
+    // for a place that has no form yet.
     const sections = Array.isArray(list.sections) ? list.sections : [];
     const known = new Set(exams.map((exam) => exam.n));
     if (!isText(list.label)) fail('shortlist.json: label is missing');
@@ -171,10 +173,26 @@ if (fs.existsSync(SHORTLIST)) {
     if (list.count !== sections.length) {
       fail(`shortlist.json: count says ${list.count}, sections[] holds ${sections.length}`);
     }
-    if (new Set(sections).size !== sections.length) fail('shortlist.json: sections[] repeats a number');
-    for (const n of sections) {
-      if (!Number.isInteger(n)) fail(`shortlist.json: ${JSON.stringify(n)} is not a section number`);
-      else if (!known.has(n)) fail(`shortlist.json lists #${n}, which is not in the dataset`);
+    const numbers = [];
+    sections.forEach((entry, i) => {
+      const at = `shortlist.json: place ${i + 1}`;
+      if (!entry || typeof entry !== 'object') return fail(`${at} is ${JSON.stringify(entry)}, not an entry`);
+      if (entry.t !== undefined && !isText(entry.t)) fail(`${at} has an empty name`);
+      if (entry.n === undefined) {
+        if (!isText(entry.t)) fail(`${at} has neither a section number nor a name`);
+        if (entry.q !== undefined && !(Number.isInteger(entry.q) && entry.q > 0)) {
+          fail(`${at}: q must be a question count, not ${JSON.stringify(entry.q)}`);
+        }
+        return;
+      }
+      if (!Number.isInteger(entry.n)) return fail(`${at}: ${JSON.stringify(entry.n)} is not a section number`);
+      if (!known.has(entry.n)) fail(`shortlist.json lists #${entry.n}, which is not in the dataset`);
+      numbers.push(entry.n);
+    });
+    if (new Set(numbers).size !== numbers.length) fail('shortlist.json: sections[] repeats a number');
+    if (!numbers.length) fail('shortlist.json: no place on the list has a form');
+    if (list.ready !== numbers.length) {
+      fail(`shortlist.json: ready says ${list.ready}, ${numbers.length} places have a form`);
     }
     if (!isText(list.about?.heading) || !Array.isArray(list.about?.paragraphs) || !list.about.paragraphs.length) {
       fail('shortlist.json: the about-page copy (about.heading, about.paragraphs) is missing');

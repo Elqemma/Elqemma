@@ -26,6 +26,22 @@ async function getJson(url) {
 const text = (value) => (typeof value === 'string' ? value.trim() : '');
 
 /**
+ * One entry of the list, in the list's own order, so `r` is its number there:
+ *   { r, n, t? }  a section on the site; `t` only where the list names it differently
+ *   { r, t, q? }  a section with no form yet, which keeps its place in the order
+ * Anything else is dropped, and the entries after it keep their own numbers.
+ */
+function readEntry(row, index) {
+  const r = index + 1;
+  if (Number.isInteger(row)) return { r, n: row };
+  if (!row || typeof row !== 'object') return null;
+  const t = text(row.t);
+  if (Number.isInteger(row.n)) return t ? { r, n: row.n, t } : { r, n: row.n };
+  if (!t) return null;
+  return Number.isInteger(row.q) && row.q > 0 ? { r, t, q: row.q } : { r, t };
+}
+
+/**
  * The published shortlist when the switch is on, otherwise null. Never throws:
  * a feature that cannot be read is a feature that is off.
  */
@@ -35,15 +51,16 @@ export async function loadShortlist() {
     if (features?.shortlist !== true) return null;
 
     const list = await getJson(SHORTLIST_URL);
-    const sections = Array.isArray(list?.sections) ? list.sections.filter(Number.isInteger) : [];
+    const entries = Array.isArray(list?.sections) ? list.sections.map(readEntry).filter(Boolean) : [];
     const label = text(list?.label);
-    if (!sections.length || !label) return null;
+    if (!entries.some((e) => e.n !== undefined) || !label) return null;
 
     return {
       label,
+      short: text(list.short) || label,
       blurb: text(list.blurb),
       updated: text(list.updated) || null,
-      sections,
+      entries,
       about: list.about && typeof list.about === 'object' ? list.about : null,
     };
   } catch {

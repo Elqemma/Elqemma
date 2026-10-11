@@ -21,7 +21,7 @@
  * off the record rather than from one figure in the metadata.
  */
 
-import { parseQuery, searchExams, highlightRanges } from './search.js';
+import { parseQuery, searchExams, highlightRanges, normalize, stemKey } from './search.js';
 import { store, exportProgress, importProgress } from './store.js';
 import { lock, REASON } from './lock.js';
 import { loadShortlist } from './shortlist.js';
@@ -157,10 +157,15 @@ const state = {
   counts: { all: 0, todo: 0, done: 0, fav: 0 },
   /**
    * The teacher's "most repeated" shortlist, as published in the dataset:
-   * { label, blurb, count, updated } — or null when this build carries none,
-   * in which case every part of the UI that mentions it stays hidden.
+   * { label, short, blurb, count, ready, updated } — or null when this build
+   * carries none, in which case every part of the UI that mentions it stays hidden.
    */
   priority: null,
+  /**
+   * The shortlist in its own order, place 1 first: the records it flags, and
+   * a stand-in for each place that has no form yet. Empty while it is off.
+   */
+  keyList: [],
 };
 
 /* -------------------------------------------------------------------------- */
@@ -332,10 +337,28 @@ function debounce(fn, wait) {
 
 const isKey = (exam) => Boolean(exam?.p);
 
+/** A place on the shortlist that has no form behind it yet. */
+const isPending = (exam) => Boolean(exam?.pending);
+
 /** The published label. Only ever asked for while the shortlist is on. */
 function keyLabel() {
   return state.priority?.label || '';
 }
+
+/** The word a card puts before its place on the list, as «القسم» before a number. */
+function keyShort() {
+  return state.priority?.short || keyLabel();
+}
+
+/*
+ * Shown alone, the shortlist is a list of its own, numbered 1 to the end in
+ * the order it was ranked — so there a card's number is its place on the list
+ * and its title is the name the list gives it. Everywhere else it is the
+ * section's own number and name. Sorting, the range chips and the cards all
+ * ask these two, so they always agree about which numbering is on screen.
+ */
+const listNumber = (exam) => (state.key === 'only' ? exam.r : exam.n);
+const listTitle = (exam) => (state.key === 'only' && exam.lt) || exam.t;
 
 function parseRange(value) {
   const match = /^(\d+)-(\d+)$/.exec(value || '');
@@ -445,12 +468,16 @@ const syncUrl = debounce(() => {
 /* Filtering                                                                   */
 /* -------------------------------------------------------------------------- */
 
+// A place with no form yet cannot be done, saved or started, so it sits under
+// «الكل» only.
 const STATUS_FILTERS = {
   all: null,
-  todo: (exam) => !store.isDone(exam.n),
-  done: (exam) => store.isDone(exam.n),
-  fav: (exam) => store.isFav(exam.n),
+  todo: (exam) => !isPending(exam) && !store.isDone(exam.n),
+  done: (exam) => !isPending(exam) && store.isDone(exam.n),
+  fav: (exam) => !isPending(exam) && store.isFav(exam.n),
 };
+
+const openedAt = (exam) => (isPending(exam) ? 0 : store.openedAt(exam.n));
 
 /** Only the controls that actually live inside the mobile sheet. */
 function sheetFilterCount() {
@@ -466,10 +493,9 @@ function sheetFilterCount() {
  * counts are always counts of what selecting that tab would really show.
  */
 function activePool() {
-  let pool = state.ordered;
+  let pool = state.key === 'only' ? state.keyList : state.ordered;
   const range = parseRange(state.range);
-  if (range) pool = pool.filter((e) => e.n >= range.from && e.n <= range.to);
-  if (state.key === 'only') pool = pool.filter(isKey);
+  if (range) pool = pool.filter((e) => listNumber(e) >= range.from && listNumber(e) <= range.to);
   return pool;
 }
 
@@ -498,19 +524,22 @@ function compute() {
   const explicitSort = state.sort !== DEFAULTS.sort;
   if (state.query.isEmpty || explicitSort) {
     const sorted = results.slice();
-    if (state.sort === 'number-desc') sorted.sort((a, b) => b.n - a.n);
-    else if (state.sort === 'title') sorted.sort((a, b) => a.t.localeCompare(b.t, 'ar'));
+    const num = listNumber;
+    if (state.sort === 'number-desc') sorted.sort((a, b) => num(b) - num(a));
+    else if (state.sort === 'title') sorted.sort((a, b) => listTitle(a).localeCompare(listTitle(b), 'ar'));
     else if (state.sort === 'recent') {
-      sorted.sort((a, b) => store.openedAt(b.n) - store.openedAt(a.n) || a.n - b.n);
+      sorted.sort((a, b) => openedAt(b) - openedAt(a) || num(a) - num(b));
     } else if (state.sort === 'questions-asc') {
       // 5 to 16 questions is a wide spread, so "what can I finish now?" is a
       // real question. Ties keep ascending order rather than shuffling.
-      sorted.sort((a, b) => (a.q || 0) - (b.q || 0) || a.n - b.n);
+      sorted.sort((a, b) => (a.q || 0) - (b.q || 0) || num(a) - num(b));
     } else if (state.sort === 'key') {
-      // Shortlist first, still ascending within each group: a way to see the
-      // priority forms at the top without hiding the rest.
-      sorted.sort((a, b) => Number(isKey(b)) - Number(isKey(a)) || a.n - b.n);
-    } else sorted.sort((a, b) => a.n - b.n);
+      // Shortlist first, in its own order, then the rest ascending: a way to
+      // see the priority forms at the top without hiding the rest.
+      sorted.sort(
+        (a, b) => Number(isKey(b)) - Number(isKey(a)) || (isKey(a) ? a.r - b.r : a.n - b.n),
+      );
+    } else sorted.sort((a, b) => num(a) - num(b));
     state.results = sorted;
   } else {
     state.results = results;
@@ -527,22 +556,30 @@ function compute() {
 /* -------------------------------------------------------------------------- */
 
 function paintTitle(node, exam) {
-  const ranges = highlightRanges(exam.t, state.query);
+  const title = listTitle(exam);
+  const ranges = highlightRanges(title, state.query);
   if (!ranges.length) {
-    node.textContent = exam.t;
+    node.textContent = title;
     return;
   }
   const fragment = document.createDocumentFragment();
   let cursor = 0;
   for (const [start, end] of ranges) {
-    if (start > cursor) fragment.append(exam.t.slice(cursor, start));
+    if (start > cursor) fragment.append(title.slice(cursor, start));
     const mark = document.createElement('mark');
-    mark.textContent = exam.t.slice(start, end);
+    mark.textContent = title.slice(start, end);
     fragment.append(mark);
     cursor = end;
   }
-  if (cursor < exam.t.length) fragment.append(exam.t.slice(cursor));
+  if (cursor < title.length) fragment.append(title.slice(cursor));
   node.replaceChildren(fragment);
+}
+
+/** «القسم 13», or «الزبدة 93» while the shortlist is shown alone. */
+function paintNumber(node, exam) {
+  const number = $('.card__number', node);
+  number.firstChild.textContent = `${state.key === 'only' ? keyShort() : 'القسم'} `;
+  $('b', number).textContent = arabicNumber(listNumber(exam));
 }
 
 /** Everything on a card that depends on progress. Safe to call any time. */
@@ -586,11 +623,16 @@ function paintCardState(node) {
   if (cta) {
     const verb = done ? 'أعد الاختبار' : 'ابدأ الاختبار';
     $('.card__cta-label', cta).textContent = verb;
-    cta.setAttribute('aria-label', `${verb} — القسم ${number}: ${exam.t}`);
+    cta.setAttribute('aria-label', `${verb} — القسم ${number}: ${listTitle(exam)}`);
   }
 }
 
-/** The shortlist badge and edge. Fixed per record, so it is painted once. */
+/**
+ * The shortlist badge and edge. Fixed per record, so it is painted once. Shown
+ * alone, every card is on the list and the number up top is its place there, so
+ * the badge carries the section's own number instead: the way back to it in
+ * the full list.
+ */
 function paintCardKey(node, exam) {
   const key = isKey(exam);
   node.classList.toggle('card--key', key);
@@ -602,7 +644,43 @@ function paintCardKey(node, exam) {
     return;
   }
   badge.hidden = false;
-  $('[data-field="key"]', badge).textContent = keyLabel();
+  $('[data-field="key"]', badge).textContent =
+    state.key === 'only' ? `القسم ${arabicNumber(exam.n)}` : keyLabel();
+}
+
+/**
+ * A place on the shortlist with no form behind it yet. It holds its number in
+ * the order, so every place after it keeps its own, and says plainly that the
+ * form is still to come. Nothing on it can be pressed.
+ */
+function buildPendingCard(entry) {
+  const node = el.template.content.firstElementChild.cloneNode(true);
+  node.classList.add('card--key', 'card--pending');
+  paintNumber(node, entry);
+  paintTitle($('.card__title', node), entry);
+  $('.card__flags', node).remove();
+  $('[data-meta="key"]', node).remove();
+  $('.card__copy', node).remove();
+
+  const questions = Number(entry.q) || 0;
+  if (questions > 0) {
+    $('[data-field="questions"]', node).textContent = countPhrase(questions, 'question');
+  } else {
+    $('[data-meta="questions"]', node).remove();
+  }
+
+  const status = $('[data-meta="status"]', node);
+  status.hidden = false;
+  $('[data-field="status"]', status).textContent = 'قريبًا';
+  $('.card__meta', node).prepend(status);
+
+  $('.card__cta', node).replaceWith(
+    Object.assign(document.createElement('span'), {
+      className: 'btn card__cta card__cta--pending',
+      textContent: 'النموذج قيد الإعداد',
+    }),
+  );
+  return node;
 }
 
 function buildLockedCta(exam) {
@@ -627,13 +705,14 @@ function buildLockedCta(exam) {
 }
 
 function buildCard(exam) {
+  if (isPending(exam)) return buildPendingCard(exam);
   const node = el.template.content.firstElementChild.cloneNode(true);
   const url = examUrl(exam);
 
   node.dataset.n = String(exam.n);
   node.id = `exam-${exam.n}`;
 
-  $('.card__number b', node).textContent = arabicNumber(exam.n);
+  paintNumber(node, exam);
   paintTitle($('.card__title', node), exam);
 
   // The forms are not a fixed length here: each one says how many questions it
@@ -785,16 +864,28 @@ function renderPager() {
 }
 
 function renderCount() {
-  const total = state.ordered.length;
+  // Shown alone, the shortlist is counted against itself, in sections: some of
+  // its places have no form yet, so they are not «نماذج».
+  const keyOnly = state.key === 'only';
+  const total = keyOnly ? state.keyList.length : state.ordered.length;
+  const unit = keyOnly ? 'section' : 'exam';
   const n = state.results.length;
   const text =
     n === total
-      ? countPhrase(n, 'exam')
-      : `${arabicNumber(n)} من ${countPhrase(total, 'exam')}`;
+      ? countPhrase(n, unit)
+      : `${arabicNumber(n)} من ${countPhrase(total, unit)}`;
   el.count.innerHTML = '';
   el.count.append(Object.assign(document.createElement('b'), { textContent: text }));
-  // The whole list, unfiltered, carries the same promise as the hero figure.
-  if (n === total && total > 0) {
+  const waiting = keyOnly ? state.results.filter(isPending).length : 0;
+  if (waiting) {
+    el.count.append(
+      Object.assign(document.createElement('span'), {
+        className: 'result-count__fresh',
+        textContent: `منها ${arabicNumber(waiting)} قريبًا`,
+      }),
+    );
+  } else if (n === total && total > 0 && !keyOnly) {
+    // The whole list, unfiltered, carries the same promise as the hero figure.
     el.count.append(
       Object.assign(document.createElement('span'), {
         className: 'result-count__fresh',
@@ -810,7 +901,7 @@ function renderActiveFilters() {
   if (state.q.trim()) tags.push({ key: 'q', label: `بحث: ${state.q.trim()}` });
   if (state.range !== 'all') {
     const r = parseRange(state.range);
-    tags.push({ key: 'range', label: 'النماذج', range: r });
+    tags.push({ key: 'range', label: state.key === 'only' ? keyShort() : 'النماذج', range: r });
   }
   if (state.key === 'only') tags.push({ key: 'key', label: keyLabel() });
   if (state.status !== 'all') {
@@ -957,6 +1048,58 @@ function renderEmptyState() {
   }
 }
 
+/** Which list the range chips were cut for: the key state they were built under. */
+let chipsBuiltFor = null;
+
+/**
+ * Fifty to a range, the last one taking in a short tail — the same cut
+ * tools/build-data.mjs makes of the sections, applied to the shortlist's places.
+ */
+function rangesUpTo(last) {
+  const ranges = [];
+  for (let from = 1; from <= last; from += 50) {
+    let to = from + 49;
+    if (last - to < 25) to = last;
+    ranges.push({ from, to });
+    if (to === last) break;
+  }
+  return ranges;
+}
+
+/**
+ * The chips themselves. The 301 come cut by the build; the shortlist, shown
+ * alone, is cut by place on the list, because that is the number its cards show.
+ */
+function buildRangeChips() {
+  const keyOnly = state.key === 'only';
+  const last = state.keyList.length ? state.keyList[state.keyList.length - 1].r : 0;
+  const ranges = keyOnly ? rangesUpTo(last) : state.data?.meta?.ranges ?? [];
+
+  const allChip = document.createElement('button');
+  allChip.type = 'button';
+  allChip.className = 'chip';
+  allChip.dataset.range = 'all';
+  allChip.append(
+    Object.assign(document.createElement('span'), { className: 'chip__label' }),
+    Object.assign(document.createElement('span'), { className: 'chip__count' }),
+  );
+
+  const chips = ranges.map((range) => {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'chip';
+    chip.dataset.range = `${range.from}-${range.to}`;
+    chip.append(
+      rangeElement(range.from, range.to),
+      Object.assign(document.createElement('span'), { className: 'chip__count' }),
+    );
+    return chip;
+  });
+
+  el.rangeChips.replaceChildren(allChip, ...chips);
+  chipsBuiltFor = state.key;
+}
+
 /**
  * Quick-jump chips. Their counts are recomputed rather than read from the
  * dataset's own totals, because the shortlist switch changes what each range
@@ -964,7 +1107,10 @@ function renderEmptyState() {
  * which a pre-built total would not know about.
  */
 function renderChips() {
+  if (chipsBuiltFor !== state.key) buildRangeChips();
   const keyOnly = state.key === 'only';
+  const pool = keyOnly ? state.keyList : state.ordered;
+  const unit = keyOnly ? 'section' : 'exam';
   const allLabel = $('.chip__label', el.rangeChips);
   if (allLabel) allLabel.textContent = keyOnly ? 'كل الأرقام' : 'كل النماذج';
 
@@ -975,20 +1121,18 @@ function renderChips() {
     if (!badge) return;
 
     const range = parseRange(chip.dataset.range);
-    const within = range
-      ? state.ordered.filter((e) => e.n >= range.from && e.n <= range.to)
-      : state.ordered;
-    const count = keyOnly ? within.filter(isKey).length : within.length;
+    const count = range
+      ? pool.filter((e) => listNumber(e) >= range.from && listNumber(e) <= range.to).length
+      : pool.length;
 
     badge.textContent = arabicNumber(count);
     chip.classList.toggle('chip--empty', count === 0);
     if (range) {
       chip.setAttribute(
         'aria-label',
-        `النماذج من ${arabicNumber(range.from)} إلى ${arabicNumber(range.to)} (${countPhrase(
-          count,
-          'exam',
-        )})`,
+        `${keyOnly ? keyShort() : 'النماذج'} من ${arabicNumber(range.from)} إلى ${arabicNumber(
+          range.to,
+        )} (${countPhrase(count, unit)})`,
       );
     }
   });
@@ -1013,7 +1157,7 @@ function renderKeyControls() {
   // sentence twice on one screen. This line explains the control instead, and
   // has to read correctly whichever way the switch is currently set.
   el.keyHint.textContent = on
-    ? 'معروضة وحدها الآن — اضغط المفتاح للرجوع إلى كل النماذج.'
+    ? 'معروضة وحدها الآن، مرقّمة بترتيبها — اضغط المفتاح للرجوع إلى كل النماذج.'
     : 'اضغط لعرضها وحدها — يعمل مع البحث والحالة والمجموعات معًا.';
 }
 
@@ -1048,6 +1192,10 @@ function applyChange({ scroll = false, keepPage = false } = {}) {
   // Clamping alone would leave them on some arbitrary page of a list they have
   // just replaced, which reads as the site losing their place.
   if (!keepPage) state.page = 1;
+  // Turning the shortlist on or off changes what the numbers count — places on
+  // the list, or sections — so a range picked under one means nothing under the
+  // other.
+  if (chipsBuiltFor !== null && chipsBuiltFor !== state.key) state.range = DEFAULTS.range;
   compute();
   render();
   syncUrl();
@@ -1333,15 +1481,18 @@ function flashCard(n) {
 /** Reveal a specific form number, loading more batches if it is further down. */
 function revealExam(n) {
   if (!state.byNumber.has(n)) return false;
-  const index = state.results.findIndex((e) => e.n === n);
+  let index = state.results.findIndex((e) => e.n === n);
   if (index === -1) {
-    // It is filtered out — clear filters so the user still lands on it.
+    // It is filtered out — clear filters so the user still lands on it. The
+    // shortlist goes too when the section is not on it, or it never would.
     state.range = 'all';
     state.status = 'all';
     state.q = '';
+    if (!isKey(state.byNumber.get(n))) state.key = 'all';
     el.search.value = '';
     applyChange();
-    return revealExam(n);
+    index = state.results.findIndex((e) => e.n === n);
+    if (index === -1) return false;
   }
   // Turn to the page it sits on rather than piling up everything before it.
   const page = Math.floor(index / PAGE_SIZE) + 1;
@@ -1949,46 +2100,8 @@ function renderMeta(meta) {
     n.setAttribute('datetime', meta.generated);
   });
 
-  el.rangeChips.replaceChildren();
-  const allChip = document.createElement('button');
-  allChip.type = 'button';
-  allChip.className = 'chip';
-  allChip.dataset.range = 'all';
-  allChip.append(
-    Object.assign(document.createElement('span'), {
-      className: 'chip__label',
-      textContent: 'كل النماذج',
-    }),
-  );
-  allChip.append(
-    Object.assign(document.createElement('span'), {
-      className: 'chip__count',
-      textContent: arabicNumber(meta.total),
-    }),
-  );
-  el.rangeChips.append(allChip);
-
-  for (const range of meta.ranges ?? []) {
-    const chip = document.createElement('button');
-    chip.type = 'button';
-    chip.className = 'chip';
-    chip.dataset.range = `${range.from}-${range.to}`;
-    chip.append(rangeElement(range.from, range.to));
-    chip.setAttribute(
-      'aria-label',
-      `النماذج من ${arabicNumber(range.from)} إلى ${arabicNumber(range.to)} (${countPhrase(
-        range.count,
-        'exam',
-      )})`,
-    );
-    chip.append(
-      Object.assign(document.createElement('span'), {
-        className: 'chip__count',
-        textContent: arabicNumber(range.count),
-      }),
-    );
-    el.rangeChips.append(chip);
-  }
+  // The range chips are cut in renderChips(), once the URL has said whether the
+  // shortlist is shown alone: the two are cut differently.
 }
 
 function showError() {
@@ -2040,22 +2153,46 @@ async function boot() {
     // The dataset no longer carries the flag; a copy cached from before it
     // stopped might, and must not show a badge the switch says is off.
     data.meta.priority = null;
-    for (const exam of data.exams) delete exam.p;
+    for (const exam of data.exams) {
+      delete exam.p;
+      delete exam.r;
+      delete exam.lt;
+    }
     const shortlist = await shortlistReady;
     if (shortlist) {
-      const listed = new Set(shortlist.sections);
-      let flagged = 0;
-      for (const exam of data.exams) {
-        if (!listed.has(exam.n)) continue;
+      // In the list's own order. A record learns its place on the list and, if
+      // the list calls it something else, that name too — and either name finds
+      // it in the search. A place with no form yet gets a stand-in record that
+      // only the shortlist, shown alone, ever lists.
+      const byNumber = new Map(data.exams.map((e) => [e.n, e]));
+      const keyList = [];
+      for (const entry of shortlist.entries) {
+        if (entry.n === undefined) {
+          const k = normalize(entry.t);
+          keyList.push({ r: entry.r, t: entry.t, q: entry.q ?? null, k, g: stemKey(k), p: 1, pending: true });
+          continue;
+        }
+        const exam = byNumber.get(entry.n);
+        if (!exam || exam.p) continue;
         exam.p = 1;
-        flagged += 1;
+        exam.r = entry.r;
+        if (entry.t) {
+          exam.lt = entry.t;
+          exam.k = normalize(`${exam.t} ${entry.t}`);
+          exam.g = stemKey(exam.k);
+        }
+        keyList.push(exam);
       }
+      const flagged = keyList.filter((e) => !e.pending).length;
       if (flagged) {
+        state.keyList = keyList;
         data.meta.priority = {
           label: shortlist.label,
+          short: shortlist.short,
           blurb: shortlist.blurb,
           updated: shortlist.updated,
-          count: flagged,
+          count: keyList.length,
+          ready: flagged,
         };
       }
     }

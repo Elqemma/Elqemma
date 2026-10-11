@@ -137,10 +137,10 @@ which is also why each OG title repeats the brand.
     non-human plural; the adjective «محدَّثة» would not agree with the singular تمييز.
   Deliberately left without it: the index `<title>` (it would pass 60 characters), the FAQ
   answers that mention 301 in passing, and every «من 301» that is a denominator — the
-  pager line, the progress bar, «134 قسمًا من 301» — or a range end («280–301»).
+  pager line, the progress bar — or a range end («280–301»).
 
   NOTE: the third stat reads `meta.generated` (2026-09-18 → «18 سبتمبر 2026»). A fourth,
-  «134 زبدة الأقسام», is built by `app.js` in second place only while the teacher has the
+  «138 زبدة الأقسام», is built by `app.js` in second place only while the teacher has the
   shortlist switched on; the markup never carries it (see section 0).
 
 - **slogan strip / footer tagline** — `القمة — طريقك نحو الـ ١٠٠`
@@ -517,8 +517,10 @@ should: a student reading his file and a student reading this site now see the s
 number for the same passage, which is the whole point.
 
 It is the only number the site states. The teacher's previous numbering is not shown
-anywhere (4.4). **«زبدة الأقسام»**, when he shows it, flags the same 134 passages it
-always did; the numbers it prints moved with them.
+anywhere (4.4). **«زبدة الأقسام»**, when he shows it, flags its sections with these same
+numbers. Shown alone it is a list of its own, numbered 1 to 138 in its ranked order: there a
+card reads «الزبدة N», and its pill carries «القسم N», the section's number on this site
+(section 0 says where that copy lives).
 
 **The form a link opens is still titled with its old number** (`القسم الثالث والأربعون
 بعد المئتين` for what this site calls القسم 1). The teacher is renaming the forms
